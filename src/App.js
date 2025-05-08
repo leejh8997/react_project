@@ -1,32 +1,52 @@
+// App.js - 라우팅 구성 (인스타그램 스타일에 맞게 수정)
 import React from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { Box, CssBaseline } from '@mui/material';
+
+// 인스타그램 메뉴 구성에 맞춘 컴포넌트
 import Login from './components/Login';
-import Join from './components/Join'; // Join으로 변경
-import Feed from './components/Feed';
-import Register from './components/Register';
-import MyPage from './components/MyPage';
-import Menu from './components/Menu'; // Menu로 변경
-import RecoilEx from './components/RecoilEx';
+import Join from './components/Join';
+import Home from './components/Home';
+import Search from './components/Search';
+import Explore from './components/Explore';
+import Reels from './components/Reels';
+import Messages from './components/Messages';
+import Notifications from './components/Notifications';
+import PostUpload from './components/PostUpload';
+import Profile from './components/Profile';
+import Menu from './components/Menu';
 
 function App() {
   const location = useLocation();
+
+  // 로그인/회원가입 화면에서는 Menu 숨김
   const isAuthPage = location.pathname === '/' || location.pathname === '/join';
 
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      {!isAuthPage && <Menu />} {/* 로그인과 회원가입 페이지가 아닐 때만 Menu 렌더링 */}
-      <Box component="main" sx={{ flexGrow: 1 }}>
+      {!isAuthPage && <Menu />}
+      <Box component="main" sx={{
+        flexGrow: 1,
+        display: 'flex',
+        justifyContent: 'center',
+        px: 2, // 좌우 여백
+        ml: !isAuthPage ? '60px' : 0 // ← Menu 너비만큼 밀기
+      }}>
+        <Box sx={{ width: '100%', maxWidth: 600 }}>
         <Routes>
-        <Route path="/" element={<Login />} />
-          <Route path="/feed" element={<Feed />} />
+          <Route path="/" element={<Login />} />
           <Route path="/join" element={<Join />} />
-          
-          <Route path="/register" element={<Register />} />
-          <Route path="/mypage" element={<MyPage />} />
-          <Route path="/recoil" element={<RecoilEx />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/reels" element={<Reels />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/upload" element={<PostUpload />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
+        </Box>
       </Box>
     </Box>
   );
