@@ -53,6 +53,7 @@ function Login() {
         headers: {
           "Content-type": "application/json"
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       })
         .then(res => res.json())

@@ -32,13 +32,6 @@ const sampleStories = [
   { username: 'jane', profile: '/images/profile7.jpg' },
 ];
 
-function formatTime(timeStr) {
-  const diff = dayjs().diff(dayjs(timeStr), 'hour');
-  if (diff < 1) return '방금';
-  if (diff < 24) return `${diff}시간 전`;
-  return dayjs(timeStr).fromNow();
-}
-
 function Arrow({ className, style, onClick, isVisible, direction }) {
   if (!isVisible) return null;
   return (
@@ -111,7 +104,7 @@ function Home() {
     setModalOpen(true);
   };
 
-  const toggleLike = async (postId) => {
+  const handleToggleLike = async (postId) => {
     const res = await authFetch(`http://localhost:3005/likes/${postId}`, {
       method: 'POST'
     });
@@ -125,6 +118,15 @@ function Home() {
         } : p
       ));
     }
+  };
+  const handleModalLikeToggle = (postId, liked) => {
+    setFeeds(prev =>
+      prev.map(post =>
+        post.post_id === postId
+          ? { ...post, is_liked: liked, like_count: post.like_count + (liked ? 1 : -1) }
+          : post
+      )
+    );
   };
 
   const slidesVisible = isMobile ? 4 : 6;
@@ -146,7 +148,7 @@ function Home() {
 
   return (
     <Box
-      sx={{ px: isMobile ? 1 : 4, py: 2, backgroundColor: isDark ? '#000' : '#f5f5f5', minHeight: '100vh', color: isDark ? 'white' : 'black', '& ::-webkit-scrollbar': { display: 'none' }, '& .slick-arrow.slick-prev:before, & .slick-arrow.slick-next:before': { display: 'none' } }}
+      sx={{ px: isMobile ? 1 : 4, py: 2, backgroundColor: isDark ? '#000' : '#fff', minHeight: '100vh', color: isDark ? 'white' : 'black', '& ::-webkit-scrollbar': { display: 'none' }, '& .slick-arrow.slick-prev:before, & .slick-arrow.slick-next:before': { display: 'none' } }}
     >
       <Box sx={{ mb: 3 }}>
         <Slider ref={sliderRef} {...sliderSettings}>
@@ -167,7 +169,7 @@ function Home() {
             <CardContent sx={{ py: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Box>
-                  <IconButton onClick={() => toggleLike(post.post_id)}>{post.is_liked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}</IconButton>
+                  <IconButton onClick={() => handleToggleLike(post.post_id)}>{post.is_liked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}</IconButton>
                   <IconButton><ChatBubbleOutlineIcon /></IconButton>
                   <IconButton><SendOutlinedIcon /></IconButton>
                 </Box>
@@ -193,7 +195,12 @@ function Home() {
         ))}
       </Box>
 
-      <PostModal open={modalOpen} onClose={() => setModalOpen(false)} post={selectedPost} />
+      <PostModal
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        post={selectedPost} 
+        onLikeToggle={handleModalLikeToggle}
+      />
     </Box>
   );
 }

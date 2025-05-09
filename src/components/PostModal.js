@@ -1,86 +1,158 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { authFetch } from '../utils/authFetch';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ko';
 import {
-    Box, Typography, Avatar, IconButton, InputBase, Button, Modal, Fade, Backdrop, CardMedia
+  Box, Typography, Avatar, IconButton, InputBase, Button, Modal, Fade, Backdrop, CardMedia
 } from '@mui/material';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import AddIcon from '@mui/icons-material/Add';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import Slider from 'react-slick';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ko');
 
 function formatTime(timestamp) {
-    const hours = dayjs().diff(dayjs(timestamp), 'hour');
-    if (hours < 1) return '방금';
-    if (hours < 24) return `${hours}시간 전`;
-    return dayjs(timestamp).fromNow();
+  const hours = dayjs().diff(dayjs(timestamp), 'hour');
+  if (hours < 1) return '방금';
+  if (hours < 24) return `${hours}시간 전`;
+  return dayjs(timestamp).fromNow();
 }
 
-function PostModal({ open, onClose, post }) {
-    const [comments, setComments] = useState([]);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
-    const [input, setInput] = useState('');
-    const [replyTo, setReplyTo] = useState(null);
-    const [openReplies, setOpenReplies] = useState({});
+function Arrow({ className, style, onClick, direction, isVisible }) {
+  if (!isVisible) return null;
+  return (
+    <div
+      className={className}
+      onClick={onClick}
+      style={{
+        ...style,
+        zIndex: 2,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.5)',
+        borderRadius: '50%',
+        width: 32,
+        height: 32,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        [direction === 'left' ? 'left' : 'right']: 12
+      }}
+    >
+      {direction === 'left' ? (
+        <ArrowBackIosNewIcon sx={{ color: 'white', fontSize: 16 }} />
+      ) : (
+        <ArrowForwardIosIcon sx={{ color: 'white', fontSize: 16 }} />
+      )}
+    </div>
+  );
+}
 
-    useEffect(() => {
-        if (post && open) loadComments(1, true);
-    }, [post, open]);
+function PostModal({ open, onClose, post, onLikeToggle }) {
+  const [comments, setComments] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [input, setInput] = useState('');
+  const [replyTo, setReplyTo] = useState(null);
+  const [openReplies, setOpenReplies] = useState({});
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [images, setImages] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const sliderRef = useRef(null);
 
-    const loadComments = async (pageNum, reset = false) => {
-        const res = await fetch(`http://localhost:3005/comments/${post.post_id}?page=${pageNum}&size=30`);
-        const data = await res.json();
-        if (data.success) {
-            if (reset) setComments(data.comments);
-            else setComments(prev => [...prev, ...data.comments]);
-            setHasMore(data.comments.length === 30);
-            setPage(pageNum);
-        }
-    };
+  useEffect(() => {
+    if (post && open) {
+      loadComments(1, true);
+      setLiked(post.is_liked || false);
+      setLikeCount(post.like_count || 0);
 
-    const handleLoadMore = () => loadComments(page + 1);
-
-    const handleSubmit = async () => {
-        const text = input.trim();
-        if (!text) return;
-
-        const res = await authFetch(`http://localhost:3005/comments/${post.post_id}`, {
-            method: 'POST',
-            body: JSON.stringify({ text, parent_comment_id: replyTo?.commentId || null })
+      authFetch(`http://localhost:3005/posts/${post.post_id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setImages(data.post.images || []);
+            setCurrentSlide(0);
+          }
         });
+    }
+  }, [post, open]);
 
-        const data = await res.json();
-        if (data.success) {
-            setInput('');
-            setReplyTo(null);
-            loadComments(1, true);
-        }
-    };
+  const loadComments = async (pageNum, reset = false) => {
+    const res = await fetch(`http://localhost:3005/comments/${post.post_id}?page=${pageNum}&size=30`);
+    const data = await res.json();
+    if (data.success) {
+      if (reset) setComments(data.comments);
+      else setComments(prev => [...prev, ...data.comments]);
+      setHasMore(data.comments.length === 30);
+      setPage(pageNum);
+    }
+  };
 
-    if (!post) return null;
+  const handleLoadMore = () => loadComments(page + 1);
 
-    return (
-        <Modal open={open} onClose={onClose} closeAfterTransition slots={{ backdrop: Backdrop }} slotProps={{ backdrop: { timeout: 300 } }}>
-            <Fade in={open}>
-                <Box sx={{ width: 777, height: 465, bgcolor: '#fff', display: 'flex', borderRadius: 2, overflow: 'hidden', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                    {/* Left: Image */}
-                    <Box sx={{ width: 372, height: 465, display: 'flex', flexDirection: 'column' }}>
-                        <Slider dots arrows infinite={false} speed={500} slidesToShow={1} slidesToScroll={1} style={{ height: '100%' }}>
-                            {(post?.images || [post?.image_url]).map((url, i) => (
-                                <Box key={i} sx={{ width: 372, height: 465 }}>
-                                    <CardMedia component="img" image={url} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                </Box>
-                            ))}
-                        </Slider>
-                    </Box>
+  const handleSubmit = async () => {
+    const text = input.trim();
+    if (!text) return;
+
+    const res = await authFetch(`http://localhost:3005/comments/${post.post_id}`, {
+      method: 'POST',
+      body: JSON.stringify({ text, parent_comment_id: replyTo?.commentId || null })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setInput('');
+      setReplyTo(null);
+      loadComments(1, true);
+    }
+  };
+
+  const handleToggleLike = async () => {
+    const res = await authFetch(`http://localhost:3005/likes/${post.post_id}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      setLiked(data.liked);
+      setLikeCount(prev => prev + (data.liked ? 1 : -1));
+      if (onLikeToggle) onLikeToggle(post.post_id, data.liked);
+    }
+  };
+
+  if (!post) return null;
+
+  return (
+    <Modal open={open} onClose={onClose} closeAfterTransition slots={{ backdrop: Backdrop }} slotProps={{ backdrop: { timeout: 300 } }}>
+      <Fade in={open}>
+        <Box sx={{ width: 777, height: 465, bgcolor: '#fff', display: 'flex', borderRadius: 2, overflow: 'hidden', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+          {/* Left: Image */}
+          <Box sx={{ width: 372, height: 465, display: 'flex', flexDirection: 'column', '& .slick-prev:before, & .slick-next:before': { display: 'none' } }}>
+            <Slider
+              ref={sliderRef}
+              dots
+              arrows
+              infinite={false}
+              speed={500}
+              slidesToShow={1}
+              slidesToScroll={1}
+              afterChange={(i) => setCurrentSlide(i)}
+              nextArrow={<Arrow direction="right" isVisible={currentSlide < images.length - 1} />}
+              prevArrow={<Arrow direction="left" isVisible={currentSlide > 0} />}
+            >
+              {(images || []).map((url, i) => (
+                <Box key={i} sx={{ width: 372, height: 465 }}>
+                  <CardMedia component="img" image={url} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </Box>
+              ))}
+            </Slider>
+          </Box>
 
                     {/* Right: Info */}
                     <Box sx={{ width: 404, height: 465, display: 'flex', flexDirection: 'column' }}>
@@ -142,7 +214,7 @@ function PostModal({ open, onClose, post }) {
                                                 <Typography
                                                     sx={{ fontSize: 12, color: 'gray', cursor: 'pointer', ml: 1 }}
                                                     onClick={() => {
-                                                        setReplyTo(c); // 최상위 댓글 기준으로
+                                                        setReplyTo(c);
                                                         setInput(prev => prev.startsWith(`@${r.user.username}`) ? prev : `@${r.user.username} `);
                                                     }}
                                                 >
@@ -168,13 +240,15 @@ function PostModal({ open, onClose, post }) {
                             <Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box>
-                                        <IconButton><FavoriteBorderIcon /></IconButton>
+                                        <IconButton onClick={handleToggleLike}>
+                                            {liked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
+                                        </IconButton>
                                         <IconButton><ChatBubbleOutlineIcon /></IconButton>
                                         <IconButton><SendOutlinedIcon /></IconButton>
                                     </Box>
                                     <IconButton><BookmarkBorderIcon /></IconButton>
                                 </Box>
-                                <Typography fontWeight="bold">좋아요 {post.like_count?.toLocaleString()}개</Typography>
+                                <Typography fontWeight="bold">좋아요 {likeCount.toLocaleString()}개</Typography>
                                 <Typography fontSize={12} color="gray">{formatTime(post.created_at)}</Typography>
                             </Box>
 
