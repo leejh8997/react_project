@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { authFetch } from '../utils/authFetch';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ko';
@@ -51,12 +52,8 @@ function PostModal({ open, onClose, post }) {
         const text = input.trim();
         if (!text) return;
 
-        const res = await fetch(`http://localhost:3005/comments/${post.post_id}`, {
+        const res = await authFetch(`http://localhost:3005/comments/${post.post_id}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: 'Bearer ' + localStorage.getItem('token')
-            },
             body: JSON.stringify({ text, parent_comment_id: replyTo?.commentId || null })
         });
 

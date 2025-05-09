@@ -1,5 +1,6 @@
 // PostModal 컴포넌트를 분리해 import하여 재사용
 import React, { useRef, useEffect, useState } from 'react';
+import { authFetch } from '../utils/authFetch';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {
@@ -78,29 +79,19 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:3005/posts/feed', {
-      headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('token')
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setFeeds(data.feed);
-        }
-      });
+    authFetch('http://localhost:3005/posts/feed')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) setFeeds(data.feed);
+    });
   }, []);
 
   const handleSubmitComment = async (postId) => {
     const text = commentInputs[postId]?.trim();
     if (!text) return;
 
-    const res = await fetch(`http://localhost:3005/comments/${postId}`, {
+    const res = await authFetch(`http://localhost:3005/comments/${postId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + localStorage.getItem('token')
-      },
       body: JSON.stringify({ text })
     });
 
@@ -121,9 +112,8 @@ function Home() {
   };
 
   const toggleLike = async (postId) => {
-    const res = await fetch(`http://localhost:3005/likes/${postId}`, {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+    const res = await authFetch(`http://localhost:3005/likes/${postId}`, {
+      method: 'POST'
     });
     const data = await res.json();
     if (data.success) {
