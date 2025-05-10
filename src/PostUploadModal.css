@@ -1,0 +1,323 @@
+/* PostUploadModal.css */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: white;
+  width: 750px;
+  max-height: 90vh;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 기본: 제목 가운데 정렬 */
+  height: 60px;
+  border-bottom: 1px solid #ddd;
+  position: relative;
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-header .right-btn {
+  position: absolute;
+  right: 16px;
+}
+
+.modal-header .left-btn {
+  position: absolute;
+  left: 16px;
+}
+
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 500px;
+  text-align: center;
+  padding: 40px;
+  gap: 16px;
+}
+
+.drop-zone p {
+  font-size: 16px;
+  color: #262626;
+}
+
+.drop-zone button {
+  padding: 8px 16px;
+  background-color: #0095f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.drop-zone button:hover {
+  background-color: #007edb;
+}
+
+.preview-section {
+  position: relative;
+  padding: 16px;
+}
+
+.preview-img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.indicator {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+  gap: 4px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ccc;
+}
+
+.dot.active {
+  background: #333;
+}
+
+.thumbnail-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  overflow-x: auto;
+}
+
+.thumbnail-img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-btn {
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  background: #eee;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.caption-box {
+  width: 100%;
+  height: 30%;
+  resize: none;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  padding: 10px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.meta-info {
+  padding: 0 16px 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.meta-info p {
+  margin: 4px 0;
+}
+
+.options p {
+  margin: 2px 0;
+  cursor: pointer;
+}
+
+.spinner {
+  height: 100px;
+  width: 100px;
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #e1306c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #e1306c;
+  margin: 20px auto;
+  position: relative;
+}
+
+.checkmark::after {
+  content: '\2713';
+  color: white;
+  font-size: 48px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.icon-btn {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+}
+
+.upload-btn {
+  padding: 8px 16px;
+  background-color: #0095f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.upload-btn:hover {
+  background-color: #007edb;
+}
+
+.upload-body {
+  display: flex;
+  height: 500px;
+}
+
+.upload-left {
+  width: 372px;
+  position: relative;
+}
+
+.upload-right {
+  flex: 1;
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-buttons {
+  position: absolute;
+  top: 40%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.nav-left,
+.nav-right {
+  position: absolute;
+  top: 40%; /* 이미지 영역 기준 세로 중앙 */
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.nav-left {
+  left: 8px;
+}
+
+.nav-right {
+  right: 8px;
+}
+
+.nav-buttons button {
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  border: none;
+  font-size: 24px;
+  /* padding: 8px 16px; */
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.profile-avatar {
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+}
+
+.profile-username {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.emoji-limit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.char-limit {
+  font-size: 12px;
+  color: #888;
+}
+
+.divider {
+  width: 100%;
+  margin-bottom: 10px;
+  border: 0.5px solid #ddd;
+}

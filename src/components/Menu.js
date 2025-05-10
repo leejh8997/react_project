@@ -1,5 +1,5 @@
 // Menu.js - 인스타그램 스타일 좌측 사이드바 메뉴
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   List,
@@ -20,6 +20,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../assets/white.png';
+import PostUpload from './PostUpload';
 
 const menuItems = [
   { label: '홈', icon: <HomeIcon />, path: '/home' },
@@ -36,7 +37,16 @@ function Menu() {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const [uploadModal, setUploadModal] = useState(false);
 
+  const handleClick = (item) => {
+    if (item.label === '만들기') {
+      setUploadModal(true);
+      
+    } else {
+      navigate(item.path);
+    }
+  };
   return (
     <Box
       sx={{
@@ -52,6 +62,10 @@ function Menu() {
         pt: 2
       }}
     >
+      {uploadModal && (
+        <PostUpload open={uploadModal} onClose={() => setUploadModal(false)} />
+      )}
+
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {/* 상단 로고 */}
         <Box
@@ -69,7 +83,7 @@ function Menu() {
               <Tooltip key={item.path} title={item.label} placement="right" arrow>
                 <ListItemButton
                   selected={location.pathname === item.path}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => handleClick(item)}
                   sx={{ justifyContent: 'center' }}
                 >
                   <ListItemIcon sx={{ minWidth: 0 }}>{item.icon}</ListItemIcon>

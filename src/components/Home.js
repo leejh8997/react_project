@@ -75,6 +75,7 @@ function Home() {
     authFetch('http://localhost:3005/posts/feed')
     .then(res => res.json())
     .then(data => {
+      console.log(data.feed);
       if (data.success) setFeeds(data.feed);
     });
   }, []);
@@ -165,7 +166,7 @@ function Home() {
         {feeds.map((post, idx) => (
           <Card key={idx} sx={{ mb: 4, borderRadius: 2, backgroundColor: isDark ? '#121212' : '#fff' }}>
             <CardHeader avatar={<Avatar src={post.profile_image} />} title={<Typography fontWeight="bold">{post.username}</Typography>} subheader={new Date(post.created_at).toLocaleString()} action={<Typography sx={{ pr: 2 }}>···</Typography>} />
-            <CardMedia component="img" image={post.image_url} alt="post" sx={{ borderRadius: 0 }} />
+            <CardMedia component="img" image={post.file_url} alt="post" sx={{ borderRadius: 0 }} />
             <CardContent sx={{ py: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Box>
