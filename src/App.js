@@ -1,5 +1,5 @@
 // App.js - 라우팅 구성 (인스타그램 스타일에 맞게 수정)
-import React from 'react';
+import React, { useState } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { Box, CssBaseline } from '@mui/material';
 
@@ -21,11 +21,19 @@ function App() {
 
   // 로그인/회원가입 화면에서는 Menu 숨김
   const isAuthPage = location.pathname === '/' || location.pathname === '/join';
-
+  const [searchOpen, setSearchOpen] = useState(false);
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', position: 'relative' }}>
       <CssBaseline />
-      {!isAuthPage && <Menu />}
+
+      {!isAuthPage && (
+        <>
+          <Box sx={{ position: 'relative', zIndex: 0 }}>
+            <Search open={searchOpen} onClose={() => setSearchOpen(false)} />
+            <Menu onSearchClick={() => setSearchOpen(true)} />
+          </Box>
+        </>
+      )}
       <Box component="main" sx={{
         flexGrow: 1,
         display: 'flex',
@@ -34,18 +42,18 @@ function App() {
         ml: !isAuthPage ? '60px' : 0 // ← Menu 너비만큼 밀기
       }}>
         <Box sx={{ width: '100%', maxWidth: 600 }}>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/join" element={<Join />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/reels" element={<Reels />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/upload" element={<PostUpload />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/join" element={<Join />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/reels" element={<Reels />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/upload" element={<PostUpload />} />
+            <Route path="/profile" element={<Profile />} />
+          </Routes>
         </Box>
       </Box>
     </Box>

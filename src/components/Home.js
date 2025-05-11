@@ -193,7 +193,17 @@ function Home() {
 
   return (
     <Box
-      sx={{ px: isMobile ? 1 : 4, py: 2, backgroundColor: isDark ? '#000' : '#fff', minHeight: '100vh', color: isDark ? 'white' : 'black', '& ::-webkit-scrollbar': { display: 'none' }, '& .slick-arrow.slick-prev:before, & .slick-arrow.slick-next:before': { display: 'none' } }}
+      sx={{
+        px: isMobile ? 1 : 4,
+        py: 2,
+        backgroundColor: isDark ? '#000' : '#fff',
+        minHeight: '100vh',
+        color: isDark ? 'white' : 'black',
+        zIndex: 0, // 👈 추가!
+        position: 'relative', // 👈 z-index 적용 위해 필요
+        '& ::-webkit-scrollbar': { display: 'none' },
+        '& .slick-arrow.slick-prev:before, & .slick-arrow.slick-next:before': { display: 'none' }
+      }}
     >
       <Box sx={{ mb: 3 }}>
         <Slider ref={sliderRef} {...sliderSettings}>
@@ -210,7 +220,7 @@ function Home() {
         {feeds.map((post, idx) => (
           <Card key={idx} sx={{ mb: 4, borderRadius: 2, backgroundColor: isDark ? '#121212' : '#fff' }}>
             <CardHeader avatar={<Avatar src={post.profile_image} />} title={<Typography fontWeight="bold">{post.username}</Typography>} subheader={new Date(post.created_at).toLocaleString()} action={<Typography sx={{ pr: 2 }}>···</Typography>} />
-            <CardMedia sx={{ position: 'relative', '&:hover': { '& .MuiIconButton-root': { opacity: 1 } } }}>
+            <CardMedia sx={{ position: 'relative', zIndex: 1, '&:hover': { '& .MuiIconButton-root': { opacity: 1 } } }}>
               {post.media_type === 'video' && post.file_url ? (
                 <>
                   <video
@@ -223,7 +233,7 @@ function Home() {
                     loop
                     muted
                     playsInline
-                    style={{ width: '100%', height: '100%', objectFit: 'cover'}}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onClick={() => handleVideoPlayToggle(post.post_id)}
                   />
                   <button

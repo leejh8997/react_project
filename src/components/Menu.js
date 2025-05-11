@@ -21,10 +21,11 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../assets/white.png';
 import PostUpload from './PostUpload';
+import Search from './Search';
 
 const menuItems = [
   { label: '홈', icon: <HomeIcon />, path: '/home' },
-  { label: '검색', icon: <SearchIcon />, path: '/search' },
+  { label: '검색', icon: <SearchIcon />, action: 'search', path: '/search' },
   { label: '탐색 탭', icon: <ExploreIcon />, path: '/explore' },
   { label: '릴스', icon: <MovieIcon />, path: '/reels' },
   { label: '메시지', icon: <ChatBubbleOutlineIcon />, path: '/messages' },
@@ -38,14 +39,16 @@ function Menu() {
   const location = useLocation();
   const theme = useTheme();
   const [uploadModal, setUploadModal] = useState(false);
-
+const [searchOpen, setSearchOpen] = useState(false);
   const handleClick = (item) => {
     if (item.label === '만들기') {
       setUploadModal(true);
       
-    } else {
-      navigate(item.path);
-    }
+    } else if (item.label === '검색') {
+    setSearchOpen(true); // 검색 패널 열기
+  } else {
+    navigate(item.path);
+  }
   };
   return (
     <Box
@@ -65,6 +68,8 @@ function Menu() {
       {uploadModal && (
         <PostUpload open={uploadModal} onClose={() => setUploadModal(false)} />
       )}
+
+      <Search open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {/* 상단 로고 */}
