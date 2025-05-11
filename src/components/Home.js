@@ -1,5 +1,5 @@
 // PostModal 컴포넌트를 분리해 import하여 재사용
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { authFetch } from '../utils/authFetch';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -18,6 +18,8 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import PostModal from './PostModal';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ko');
@@ -59,10 +61,30 @@ function Home() {
   const [commentInputs, setCommentInputs] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [mutedMap, setMutedMap] = useState({});
+  const videoRefs = useRef({});
 
   const handleAfterChange = (index) => {
     setSlideState(prev => ({ ...prev, current: index }));
   };
+
+  const fetchPosts = useCallback(() => {
+    authFetch('http://localhost:3005/posts/feed')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setFeeds(data.feed);
+          // initialize mute state
+          const initialMuted = {};
+          data.feed.forEach(post => {
+            if (post.media_type === 'video') {
+              initialMuted[post.post_id] = true;
+            }
+          });
+          setMutedMap(initialMuted);
+        }
+      });
+  }, []);
 
   useEffect(() => {
     if (sliderRef.current) {
@@ -72,13 +94,18 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    authFetch('http://localhost:3005/posts/feed')
-    .then(res => res.json())
-    .then(data => {
-      console.log(data.feed);
-      if (data.success) setFeeds(data.feed);
-    });
+    fetchPosts();
   }, []);
+
+  useEffect(() => {
+    const handleFeedUpdate = () => {
+      fetchPosts(); // ✅ 새 피드 불러오기
+    };
+    window.addEventListener('feedUpdated', handleFeedUpdate);
+    return () => {
+      window.removeEventListener('feedUpdated', handleFeedUpdate);
+    };
+  }, [fetchPosts]);
 
   const handleSubmitComment = async (postId) => {
     const text = commentInputs[postId]?.trim();
@@ -130,6 +157,23 @@ function Home() {
     );
   };
 
+  const handleMuteToggle = (postId) => {
+    const video = videoRefs.current[postId];
+    if (video) {
+      const newMuted = !video.muted;
+      video.muted = newMuted;
+      setMutedMap(prev => ({ ...prev, [postId]: newMuted }));
+    }
+  };
+
+  const handleVideoPlayToggle = (postId) => {
+    const video = videoRefs.current[postId];
+    if (video) {
+      if (video.paused) video.play();
+      else video.pause();
+    }
+  };
+
   const slidesVisible = isMobile ? 4 : 6;
   const sliderSettings = {
     dots: false,
@@ -166,7 +210,50 @@ function Home() {
         {feeds.map((post, idx) => (
           <Card key={idx} sx={{ mb: 4, borderRadius: 2, backgroundColor: isDark ? '#121212' : '#fff' }}>
             <CardHeader avatar={<Avatar src={post.profile_image} />} title={<Typography fontWeight="bold">{post.username}</Typography>} subheader={new Date(post.created_at).toLocaleString()} action={<Typography sx={{ pr: 2 }}>···</Typography>} />
-            <CardMedia component="img" image={post.file_url} alt="post" sx={{ borderRadius: 0 }} />
+            <CardMedia sx={{ position: 'relative', '&:hover': { '& .MuiIconButton-root': { opacity: 1 } } }}>
+              {post.media_type === 'video' && post.file_url ? (
+                <>
+                  <video
+                    src={post.file_url}
+                    ref={el => {
+                      if (el) videoRefs.current[post.post_id] = el;
+                    }}
+                    onError={(e) => console.warn('비디오 로딩 실패:', e.target.src)}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={{ width: '100%', height: '100%', objectFit: 'cover'}}
+                    onClick={() => handleVideoPlayToggle(post.post_id)}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMuteToggle(post.post_id);
+                    }}
+                    className="mute-button"
+                    sx={{
+                      position: 'absolute',
+                      bottom: 8,
+                      right: 8,
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      color: 'white',
+                      width: 20,
+                      height: 20,
+                      zIndex: 10,
+                    }}
+                  >
+                    {mutedMap[post.post_id] ? <VolumeOffIcon /> : <VolumeUpIcon />}
+                  </button>
+                </>
+              ) : (
+                <img
+                  src={post.file_url}
+                  alt="post"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              )}
+            </CardMedia>
             <CardContent sx={{ py: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Box>
@@ -197,9 +284,9 @@ function Home() {
       </Box>
 
       <PostModal
-        open={modalOpen} 
-        onClose={() => setModalOpen(false)} 
-        post={selectedPost} 
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        post={selectedPost}
         onLikeToggle={handleModalLikeToggle}
       />
     </Box>

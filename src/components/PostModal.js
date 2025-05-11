@@ -15,6 +15,8 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import Slider from 'react-slick';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ko');
@@ -68,6 +70,9 @@ function PostModal({ open, onClose, post, onLikeToggle }) {
   const [files, setFiles] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const sliderRef = useRef(null);
+  const videoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
     if (post && open) {
@@ -94,6 +99,25 @@ function PostModal({ open, onClose, post, onLikeToggle }) {
       else setComments(prev => [...prev, ...data.comments]);
       setHasMore(data.comments.length === 30);
       setPage(pageNum);
+    }
+  };
+
+  const handleTogglePlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play();
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleToggleMute = () => {
+    if (videoRef.current) {
+      const muted = !videoRef.current.muted;
+      videoRef.current.muted = muted;
+      setIsMuted(muted);
     }
   };
 
@@ -147,14 +171,25 @@ function PostModal({ open, onClose, post, onLikeToggle }) {
               prevArrow={<Arrow direction="left" isVisible={currentSlide > 0} />}
             >
               {(files || []).map((file, i) => (
-                <Box key={i} sx={{ width: 372, height: 465 }}>
+                <Box key={i} sx={{ width: 372, height: 465, position: 'relative' }}>
                   {file.media_type === 'video' ? (
-                    <CardMedia
-                      component="video"
-                      src={file.file_url}
-                      controls
-                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    <>
+                      <CardMedia
+                        ref={videoRef}
+                        component="video"
+                        src={file.file_url}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        onClick={handleTogglePlay}
+                        sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <button onClick={handleToggleMute} className="mute-button">
+                        {isMuted ? <VolumeOffIcon sx={{ width: 20, height: 20 }} /> : 
+                        <VolumeUpIcon sx={{ width: 20, height: 20 }} />}
+                      </button>
+                    </>
                   ) : (
                     <CardMedia
                       component="img"

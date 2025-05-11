@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Modal,
   Fade,
@@ -13,6 +13,9 @@ import '../PostUploadModal.css';
 import EmojiPicker from 'emoji-picker-react';
 import { authFetch } from '../utils/authFetch';
 import { jwtDecode } from 'jwt-decode';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 
 export default function PostUploadModal({ open, onClose }) {
   const token = localStorage.getItem('token');
@@ -24,8 +27,15 @@ export default function PostUploadModal({ open, onClose }) {
   const [isUploaded, setIsUploaded] = useState(false);
   const inputRef = useRef();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // state & ref
+  const videoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
   const emojiBtnRef = useRef();
   const emojiPickerRef = useRef();
+  const previewURLs = useMemo(() => {
+    return files.map(file => URL.createObjectURL(file));
+  }, [files]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -44,6 +54,33 @@ export default function PostUploadModal({ open, onClose }) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showEmojiPicker]);
+
+  useEffect(() => {
+    return () => {
+      previewURLs.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [previewURLs]);
+
+  const isVideoFile = (file) => file.type.startsWith('video/');
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      const muted = !videoRef.current.muted;
+      videoRef.current.muted = muted;
+      setIsMuted(muted);
+    }
+  };
+
+  const toggleVideoPlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play();
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
 
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files);
@@ -84,15 +121,14 @@ export default function PostUploadModal({ open, onClose }) {
       const data = await res.json();
 
       if (data.success) {
-        setIsUploading(false);
-        setIsUploaded(true);
-        // 1초 후 모달 닫기
+
         setTimeout(() => {
+          setIsUploading(false);
+          setIsUploaded(true);
           setFiles([]);
           setCaption('');
-          setIsUploaded(false);
-          onClose();
-        }, 1000);
+          window.dispatchEvent(new Event('feedUpdated'));
+        }, 2000);
       } else {
         alert('업로드 실패: ' + data.message);
         setIsUploading(false);
@@ -159,11 +195,31 @@ export default function PostUploadModal({ open, onClose }) {
             ) : (
               <div className="upload-body">
                 <div className="upload-left">
-                  <img
-                    src={URL.createObjectURL(files[currentIndex])}
-                    alt="preview"
-                    className="preview-img"
-                  />
+                  <div className="media-preview" style={{ position: 'relative' }}>
+                    {isVideoFile(files[currentIndex]) ? (
+                      <>
+                        <video
+                          ref={videoRef}
+                          src={previewURLs[currentIndex]}
+                          className="preview-video"
+                          muted
+                          autoPlay
+                          loop
+                          onClick={toggleVideoPlay}
+                        />
+                        <button onClick={toggleMute} className="mute-button">
+                          {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+                        </button>
+                      </>
+                    ) : (
+                      <img
+                        src={URL.createObjectURL(files[currentIndex])}
+                        alt="preview"
+                        className="preview-img"
+                      />
+                    )}
+                  </div>
+
                   {currentIndex > 0 && (
                     <button className="nav-left" onClick={() => setCurrentIndex(currentIndex - 1)}>&lt;</button>
                   )}
@@ -176,19 +232,36 @@ export default function PostUploadModal({ open, onClose }) {
                     ))}
                   </div>
                   <div className="thumbnail-section">
-                    {files.map((file, i) => (
-                      <img
-                        key={i}
-                        src={URL.createObjectURL(file)}
-                        alt="thumb"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, i)}
-                        onDrop={(e) => handleDrop(e, i)}
-                        onDragOver={(e) => e.preventDefault()}
-                        className="thumbnail-img"
-                        onClick={() => setCurrentIndex(i)}
-                      />
-                    ))}
+                    {files.map((file, i) => {
+                      const isVideo = file.type.startsWith('video/');
+                      const src = previewURLs[i];
+                      return (
+                        <div
+                          key={i}
+                          className={`thumbnail-wrapper ${i === currentIndex ? 'selected' : ''}`}
+                          onClick={() => setCurrentIndex(i)}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, i)}
+                          onDrop={(e) => handleDrop(e, i)}
+                          onDragOver={(e) => e.preventDefault()}
+                        >
+                          {isVideo ? (
+                            <video
+                              src={src}
+                              className="thumbnail-media"
+                              muted
+                              playsInline
+                            />
+                          ) : (
+                            <img
+                              src={src}
+                              alt="thumb"
+                              className="thumbnail-media"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                     <button className="add-btn" onClick={handleAddFileClick}>+</button>
                   </div>
                 </div>
