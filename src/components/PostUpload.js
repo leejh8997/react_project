@@ -268,8 +268,8 @@ export default function PostUploadModal({ open, onClose }) {
 
                 <div className="upload-right">
                   <div className="profile-section">
-                    <Avatar src="/images/profile1.jpg" className="profile-avatar" />
-                    <span className="profile-username">jae.hyeong94</span>
+                    <Avatar src={user.profileImage} className="profile-avatar" />
+                    <span className="profile-username">{user.username}</span>
                   </div>
 
                   <textarea

@@ -39,17 +39,28 @@ function Menu() {
   const location = useLocation();
   const theme = useTheme();
   const [uploadModal, setUploadModal] = useState(false);
-const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+ const [searchVisible, setSearchVisible] = useState(false); // ✅ 렌더링 여부 추가
+
   const handleClick = (item) => {
     if (item.label === '만들기') {
       setUploadModal(true);
-      
+
     } else if (item.label === '검색') {
-    setSearchOpen(true); // 검색 패널 열기
-  } else {
-    navigate(item.path);
-  }
+      if (!searchOpen && !searchVisible) {
+        // 열기 요청 시 mount 먼저
+        setSearchVisible(true);
+        setTimeout(() => setSearchOpen(true), 10); // 10ms 후 애니메이션 시작
+      } else if (searchOpen) {
+        // 열려 있을 때만 닫기 허용
+        setSearchOpen(false); // 애니메이션 닫기
+        setTimeout(() => setSearchVisible(false), 2000); // transition 끝나고 unmount
+      }
+    } else {
+      navigate(item.path);
+    }
   };
+  
   return (
     <Box
       sx={{
@@ -57,7 +68,9 @@ const [searchOpen, setSearchOpen] = useState(false);
         height: '100vh',
         borderRight: `1px solid ${theme.palette.divider}`,
         position: 'fixed',
-        backgroundColor: theme.palette.background.default,
+        backgroundColor: '#fff',       // 흰색 (100% 불투명)
+        opacity: 1,                    // 불투명도 100%
+        zIndex: 9999,                  // Search보다 앞에 가지 않게 설정
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -69,9 +82,17 @@ const [searchOpen, setSearchOpen] = useState(false);
         <PostUpload open={uploadModal} onClose={() => setUploadModal(false)} />
       )}
 
-      <Search open={searchOpen} onClose={() => setSearchOpen(false)} />
+      {searchVisible && (
+        <Search
+          open={searchOpen}
+          onClose={() => {
+            setSearchOpen(false);
+            setTimeout(() => setSearchVisible(false), 400); // Search 안에서 onClose 호출 시에도 동일
+          }}
+        />
+      )}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <Box sx={{ width: '59px', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#fff' }}>
         {/* 상단 로고 */}
         <Box
           component="img"
@@ -82,7 +103,7 @@ const [searchOpen, setSearchOpen] = useState(false);
         />
 
         {/* 가운데 정렬된 메뉴 */}
-        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <Box sx={{ width: '59px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#fff', }}>
           <List>
             {menuItems.map((item) => (
               <Tooltip key={item.path} title={item.label} placement="right" arrow>
@@ -100,7 +121,7 @@ const [searchOpen, setSearchOpen] = useState(false);
       </Box>
 
       {/* 하단 더보기 */}
-      <Box sx={{ mb: 1 }}>
+      <Box sx={{ width: '59px', mb: 1, backgroundColor: '#fff', }}>
         <Tooltip title="더 보기" placement="right" arrow>
           <ListItemButton onClick={() => alert('설정/로그아웃/전환 메뉴 (임시 동작)')} sx={{ justifyContent: 'center' }}>
             <ListItemIcon sx={{ minWidth: 0 }}><MenuIcon /></ListItemIcon>

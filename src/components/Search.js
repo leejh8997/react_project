@@ -1,5 +1,5 @@
 // ✅ SearchPanel.jsx 수정버전
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, InputBase, IconButton, Divider, Avatar, CircularProgress
 } from '@mui/material';
@@ -18,16 +18,24 @@ export default function Search({ open, onClose }) {
   ]);
   const [result, setResult] = useState([]);
 
+  const wrapperRef = useRef();
   const fetchSearch = debounce(async (q) => {
     if (!q.trim()) return;
     setSearching(true);
-    setTimeout(() => {
-      setResult([
-        { username: 'jye_e', name: '지예', profile: '/images/profile1.jpg' },
-        { username: 'mj_park', name: '박민지', profile: '/images/profile2.jpg' }
-      ]);
+    try {
+      const res = await fetch(`http://localhost:3005/search?q=${encodeURIComponent(q)}&type=${searchType}`);
+      const data = await res.json();
+      if (data.success) {
+        setResult(searchType === 'user' ? data.users : data.posts);
+      } else {
+        setResult([]);
+      }
+    } catch (err) {
+      console.error('검색 실패:', err);
+      setResult([]);
+    } finally {
       setSearching(false);
-    }, 1000);
+    }
   }, 1000);
 
   useEffect(() => {
@@ -36,10 +44,21 @@ export default function Search({ open, onClose }) {
     } else {
       setResult([]);
     }
-  }, [keyword]);
+  }, [keyword, searchType]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (open && wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        onClose(); // ✅ 외부 클릭 시 닫기
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open, onClose]);
 
   return (
     <Box
+      ref={wrapperRef}
       sx={{
         width: 360,
         height: '100vh',
@@ -49,8 +68,8 @@ export default function Search({ open, onClose }) {
         transform: open ? 'translateX(60px)' : 'translateX(-360px)',
         transition: 'transform 0.4s ease',
         bgcolor: '#fff',
-        boxShadow: 3,
-        zIndex: 1000,
+        boxShadow: '4px 0 10px rgba(0,0,0,0.1)',
+        zIndex: -1,
         display: 'flex',
         flexDirection: 'column',
         p: 2,
@@ -121,15 +140,26 @@ export default function Search({ open, onClose }) {
       )}
 
       <Box sx={{ flex: 1, overflowY: 'auto', mt: 1 }}>
-        {(keyword ? result : recent).map((user, i) => (
+        {(keyword ? result : recent).map((item, i) => (
           <Box
             key={i}
-            sx={{ display: 'flex', alignItems: 'center', px: 1.5, py: 1, cursor: 'pointer', '&:hover': { bgcolor: '#f5f5f5' } }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              px: 1.5,
+              py: 1,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#f5f5f5' }
+            }}
           >
-            <Avatar src={user.profile} sx={{ width: 40, height: 40, mr: 1.5 }} />
+            <Avatar src={item.profile_image || item.profile} sx={{ width: 40, height: 40, mr: 1.5 }} />
             <Box>
-              <Typography fontWeight="bold">{user.username}</Typography>
-              <Typography fontSize={13} color="gray">{user.name}</Typography>
+              <Typography fontWeight="bold">
+                {searchType === 'user' ? item.username : item.caption}
+              </Typography>
+              <Typography fontSize={13} color="gray">
+                {searchType === 'user' ? item.full_name || item.name : `작성자: ${item.username}`}
+              </Typography>
             </Box>
           </Box>
         ))}

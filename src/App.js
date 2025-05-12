@@ -28,7 +28,7 @@ function App() {
 
       {!isAuthPage && (
         <>
-          <Box sx={{ position: 'relative', zIndex: 0 }}>
+          <Box sx={{ position: 'relative', zIndex: 500 }}>
             <Search open={searchOpen} onClose={() => setSearchOpen(false)} />
             <Menu onSearchClick={() => setSearchOpen(true)} />
           </Box>
@@ -37,11 +37,13 @@ function App() {
       <Box component="main" sx={{
         flexGrow: 1,
         display: 'flex',
-        justifyContent: 'center',
-        px: 2, // 좌우 여백
-        ml: !isAuthPage ? '60px' : 0 // ← Menu 너비만큼 밀기
+        justifyContent: location.pathname === '/messages' ? 'flex-start' : 'center',
+        px: 0,
+        ml: !isAuthPage ? '60px' : 0
       }}>
-        <Box sx={{ width: '100%', maxWidth: 600 }}>
+        <Box sx={{ width: '100%',
+          ...(location.pathname !== '/messages' && { maxWidth: 600, px: 2 }) // 메시지 페이지가 아닐 경우만 px, maxWidth 적용
+          }}>
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/join" element={<Join />} />
