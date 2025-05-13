@@ -21,7 +21,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../assets/white.png';
 import PostUpload from './PostUpload';
-import Search from './Search';
 import { jwtDecode } from 'jwt-decode';
 
 const menuItems = [
@@ -35,37 +34,28 @@ const menuItems = [
   { label: '프로필', icon: <AccountCircleIcon />, path: '/profile' },
 ];
 
-function Menu() {
+function Menu({ onSearchClick, onNotifClick }) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const [uploadModal, setUploadModal] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchVisible, setSearchVisible] = useState(false); // ✅ 렌더링 여부 추가
   const token = localStorage.getItem('token');
   const user = token ? jwtDecode(token) : {};
 
-  const handleClick = (item) => {
+   const handleClick = (item) => {
     if (item.label === '만들기') {
       setUploadModal(true);
-
     } else if (item.label === '검색') {
-      if (!searchOpen && !searchVisible) {
-        // 열기 요청 시 mount 먼저
-        setSearchVisible(true);
-        setTimeout(() => setSearchOpen(true), 10); // 10ms 후 애니메이션 시작
-      } else if (searchOpen) {
-        // 열려 있을 때만 닫기 허용
-        setSearchOpen(false); // 애니메이션 닫기
-        setTimeout(() => setSearchVisible(false), 2000); // transition 끝나고 unmount
-      }
+      onSearchClick?.();
+    } else if (item.label === '알림') {
+      onNotifClick?.();
     } else if (item.label === '프로필') {
       if (user.username) {
         navigate(`/profile/${user.username}`);
       } else {
         alert('로그인이 필요합니다.');
       }
-    } else {
+    } else if (item.path) {
       navigate(item.path);
     }
   };
@@ -91,15 +81,7 @@ function Menu() {
         <PostUpload open={uploadModal} onClose={() => setUploadModal(false)} />
       )}
 
-      {searchVisible && (
-        <Search
-          open={searchOpen}
-          onClose={() => {
-            setSearchOpen(false);
-            setTimeout(() => setSearchVisible(false), 400); // Search 안에서 onClose 호출 시에도 동일
-          }}
-        />
-      )}
+      
 
       <Box sx={{ width: '59px', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#fff' }}>
         {/* 상단 로고 */}

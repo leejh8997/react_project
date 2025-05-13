@@ -22,6 +22,30 @@ function App() {
   // 로그인/회원가입 화면에서는 Menu 숨김
   const isAuthPage = location.pathname === '/' || location.pathname === '/join';
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifVisible, setNotifVisible] = useState(false);
+
+  const handleSearchToggle = () => {
+    if (!searchOpen && !searchVisible) {
+      setSearchVisible(true);
+      setTimeout(() => setSearchOpen(true), 10);
+    } else if (searchOpen) {
+      setSearchOpen(false);
+      setTimeout(() => setSearchVisible(false), 400); // 애니메이션 시간에 맞춰 unmount
+    }
+  };
+
+  const handleNotifToggle = () => {
+    if (!notifOpen && !notifVisible) {
+      setNotifVisible(true);
+      setTimeout(() => setNotifOpen(true), 10);
+    } else if (notifOpen) {
+      setNotifOpen(false);
+      setTimeout(() => setNotifVisible(false), 400); // 애니메이션 시간에 맞춰 unmount
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', position: 'relative' }}>
       <CssBaseline />
@@ -29,8 +53,16 @@ function App() {
       {!isAuthPage && (
         <>
           <Box sx={{ position: 'relative', zIndex: 500 }}>
-            <Search open={searchOpen} onClose={() => setSearchOpen(false)} />
-            <Menu onSearchClick={() => setSearchOpen(true)} />
+            {searchVisible && (
+              <Search open={searchOpen} onClose={handleSearchToggle} />
+            )}
+            {notifVisible && (
+              <Notifications open={notifOpen} onClose={handleNotifToggle} />
+            )}
+            <Menu
+              onSearchClick={handleSearchToggle}
+              onNotifClick={handleNotifToggle}
+            />
           </Box>
         </>
       )}
