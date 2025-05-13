@@ -54,7 +54,7 @@ function App() {
             <Route path="/messages" element={<Messages />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/upload" element={<PostUpload />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:username" element={<Profile />} />
           </Routes>
         </Box>
       </Box>

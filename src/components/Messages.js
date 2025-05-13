@@ -88,26 +88,50 @@ function Messages() {
     };
   }, [selectedRoom]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim() && files.length === 0) return;
 
-    // 공통 메시지 객체 생성
-    const msg = {
-      senderId: user.userId,
-      content: input || (files[0] && files[0].name),
-      type: files.length > 0
-        ? (files[0].type.startsWith('video') ? 'video' : 'image')
-        : 'text',
-      createdAt: new Date().toISOString()
-    };
+    // 텍스트 메시지 먼저 전송
+    if (input.trim()) {
+      const msg = {
+        senderId: user.userId,
+        content: input,
+        type: 'text',
+      };
 
-    // 소켓 전송
-    socket.emit('sendMessage', {
-      roomId: selectedRoom.room_id, // ✅ 반드시 room_id
-      message: msg                  // ✅ 화면과 DB 저장 동일하게
-    });
+      socket.emit('sendMessage', {
+        roomId: selectedRoom.room_id,
+        message: msg,
+      });
+    }
 
-    // 입력 초기화
+    // 파일이 있을 경우 업로드 후 각 파일별로 메시지 전송
+    if (files.length > 0) {
+      const formData = new FormData();
+      files.forEach(file => formData.append('file', file)); // input name은 'file'
+
+      const res = await fetch('http://localhost:3005/dm/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        for (let f of data.files) {
+          const msg = {
+            senderId: user.userId,
+            content: f.fileUrl,
+            type: f.type,
+          };
+
+          socket.emit('sendMessage', {
+            roomId: selectedRoom.room_id,
+            message: msg
+          });
+        }
+      }
+    }
+
     setInput('');
     setFiles([]);
   };
@@ -293,7 +317,13 @@ function Messages() {
                           maxWidth="70%"
                         >
                           <Typography fontSize={14}>
-                            {isMyMessage ? msg.content : `${senderName}: ${msg.content}`}
+                            {msg.type === 'image' ? (
+                              <img src={msg.content} style={{ maxWidth: '100%', borderRadius: 4 }} />
+                            ) : msg.type === 'video' ? (
+                              <video src={msg.content} controls style={{ maxWidth: '100%', borderRadius: 4 }} />
+                            ) : (
+                              isMyMessage ? msg.content : `${senderName}: ${msg.content}`
+                            )}
                           </Typography>
                         </Box>
                       </Box>

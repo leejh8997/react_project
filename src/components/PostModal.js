@@ -58,7 +58,7 @@ function Arrow({ className, style, onClick, direction, isVisible }) {
   );
 }
 
-function PostModal({ open, onClose, post, onLikeToggle }) {
+function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
   const [comments, setComments] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -137,6 +137,7 @@ function PostModal({ open, onClose, post, onLikeToggle }) {
       setInput('');
       setReplyTo(null);
       loadComments(1, true);
+      if (onCommentAdd) onCommentAdd(post.post_id);
     }
   };
 

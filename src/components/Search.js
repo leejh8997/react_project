@@ -7,6 +7,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import PostAddIcon from '@mui/icons-material/PostAdd';
 import PeopleIcon from '@mui/icons-material/People';
 import ClearIcon from '@mui/icons-material/Clear';
+import { useNavigate } from 'react-router-dom';
+import PostModal from './PostModal';
 import { debounce } from 'lodash';
 
 export default function Search({ open, onClose }) {
@@ -19,6 +21,10 @@ export default function Search({ open, onClose }) {
   const [result, setResult] = useState([]);
 
   const wrapperRef = useRef();
+  const navigate = useNavigate();
+  const [selectedPost, setSelectedPost] = useState(null); // ✅ 포스트 선택 상태
+  const [modalOpen, setModalOpen] = useState(false); // ✅ 모달 열기 상태
+
   const fetchSearch = debounce(async (q) => {
     if (!q.trim()) return;
     setSearching(true);
@@ -48,13 +54,14 @@ export default function Search({ open, onClose }) {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      if (modalOpen) return;
       if (open && wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         onClose(); // ✅ 외부 클릭 시 닫기
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open, onClose]);
+  }, [open, onClose, modalOpen]);
 
   return (
     <Box
@@ -151,19 +158,57 @@ export default function Search({ open, onClose }) {
               cursor: 'pointer',
               '&:hover': { bgcolor: '#f5f5f5' }
             }}
+            onClick={(e) => {
+              if (searchType === 'user') {
+                e.stopPropagation();
+                navigate(`/profile/${item.username}`);
+                onClose(); // 패널 닫기
+              } else if (searchType === 'post') {
+                setSelectedPost(item);
+                setModalOpen(true); // 모달만 열고 패널 유지
+              }
+            }}
           >
             <Avatar src={item.profile_image || item.profile} sx={{ width: 40, height: 40, mr: 1.5 }} />
-            <Box>
-              <Typography fontWeight="bold">
+            <Box
+              key={i}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                px: 1.5,
+                py: 1,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#f5f5f5' }
+              }}
+              onClick={() => {
+                if (searchType === 'user') {
+                  navigate(`/profile/${item.username}`);
+                  onClose(); // 검색 패널 닫기
+                } else if (searchType === 'post') {
+                  
+                  setSelectedPost(item);
+                  setModalOpen(true);
+                }
+                console.log("sefdsfsgssdg",item);
+              }}
+            >
+              <Typography fontWeight="bold" component="div">
                 {searchType === 'user' ? item.username : item.caption}
               </Typography>
-              <Typography fontSize={13} color="gray">
+              <Typography fontSize={13} color="gray" component="span">
                 {searchType === 'user' ? item.full_name || item.name : `작성자: ${item.username}`}
               </Typography>
             </Box>
           </Box>
         ))}
       </Box>
+      {searchType === 'post' && selectedPost && (
+        <PostModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          post={selectedPost}
+        />
+      )}
     </Box>
   );
 }

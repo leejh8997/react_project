@@ -22,6 +22,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../assets/white.png';
 import PostUpload from './PostUpload';
 import Search from './Search';
+import { jwtDecode } from 'jwt-decode';
 
 const menuItems = [
   { label: '홈', icon: <HomeIcon />, path: '/home' },
@@ -40,7 +41,9 @@ function Menu() {
   const theme = useTheme();
   const [uploadModal, setUploadModal] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
- const [searchVisible, setSearchVisible] = useState(false); // ✅ 렌더링 여부 추가
+  const [searchVisible, setSearchVisible] = useState(false); // ✅ 렌더링 여부 추가
+  const token = localStorage.getItem('token');
+  const user = token ? jwtDecode(token) : {};
 
   const handleClick = (item) => {
     if (item.label === '만들기') {
@@ -56,11 +59,17 @@ function Menu() {
         setSearchOpen(false); // 애니메이션 닫기
         setTimeout(() => setSearchVisible(false), 2000); // transition 끝나고 unmount
       }
+    } else if (item.label === '프로필') {
+      if (user.username) {
+        navigate(`/profile/${user.username}`);
+      } else {
+        alert('로그인이 필요합니다.');
+      }
     } else {
       navigate(item.path);
     }
   };
-  
+
   return (
     <Box
       sx={{

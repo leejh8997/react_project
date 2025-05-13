@@ -147,11 +147,21 @@ function Home() {
       ));
     }
   };
+  // 모달에서 좋아요, 댓글 달면 실시간으로 홈 페이지에 반영하는 콜백함수
   const handleModalLikeToggle = (postId, liked) => {
     setFeeds(prev =>
       prev.map(post =>
         post.post_id === postId
           ? { ...post, is_liked: liked, like_count: post.like_count + (liked ? 1 : -1) }
+          : post
+      )
+    );
+  };
+  const handleModalCommentAdd = (postId) => {
+    setFeeds(prev =>
+      prev.map(post =>
+        post.post_id === postId
+          ? { ...post, comment_count: post.comment_count + 1 }
           : post
       )
     );
@@ -298,6 +308,7 @@ function Home() {
         onClose={() => setModalOpen(false)}
         post={selectedPost}
         onLikeToggle={handleModalLikeToggle}
+        onCommentAdd={handleModalCommentAdd}
       />
     </Box>
   );
