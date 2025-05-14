@@ -1,5 +1,5 @@
 // Menu.js - 인스타그램 스타일 좌측 사이드바 메뉴
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   List,
@@ -7,7 +7,8 @@ import {
   ListItemIcon,
   Tooltip,
   useTheme,
-  Typography
+  Typography,
+  Badge,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
@@ -22,6 +23,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../assets/white.png';
 import PostUpload from './PostUpload';
 import { jwtDecode } from 'jwt-decode';
+import { authFetch } from '../utils/authFetch';
 
 const menuItems = [
   { label: '홈', icon: <HomeIcon />, path: '/home' },
@@ -34,7 +36,7 @@ const menuItems = [
   { label: '프로필', icon: <AccountCircleIcon />, path: '/profile' },
 ];
 
-function Menu({ onSearchClick, onNotifClick }) {
+function Menu({ onSearchClick, onNotifClick, unreadCount }) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -42,7 +44,7 @@ function Menu({ onSearchClick, onNotifClick }) {
   const token = localStorage.getItem('token');
   const user = token ? jwtDecode(token) : {};
 
-   const handleClick = (item) => {
+  const handleClick = (item) => {
     if (item.label === '만들기') {
       setUploadModal(true);
     } else if (item.label === '검색') {
@@ -81,7 +83,7 @@ function Menu({ onSearchClick, onNotifClick }) {
         <PostUpload open={uploadModal} onClose={() => setUploadModal(false)} />
       )}
 
-      
+
 
       <Box sx={{ width: '59px', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#fff' }}>
         {/* 상단 로고 */}
@@ -103,7 +105,13 @@ function Menu({ onSearchClick, onNotifClick }) {
                   onClick={() => handleClick(item)}
                   sx={{ justifyContent: 'center' }}
                 >
-                  <ListItemIcon sx={{ minWidth: 0 }}>{item.icon}</ListItemIcon>
+                  <ListItemIcon sx={{ minWidth: 0 }}>
+                    {item.label === '알림' ? (
+                      <Badge color="error" variant="dot" invisible={unreadCount === 0}>
+                        <FavoriteBorderIcon />
+                      </Badge>
+                    ) : item.icon}
+                  </ListItemIcon>
                 </ListItemButton>
               </Tooltip>
             ))}

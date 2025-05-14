@@ -20,6 +20,8 @@ import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import PostModal from './PostModal';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import socket from '../utils/socket';
+import { jwtDecode } from 'jwt-decode';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ko');
@@ -52,6 +54,8 @@ function Arrow({ className, style, onClick, isVisible, direction }) {
 }
 
 function Home() {
+  const token = localStorage.getItem('token');
+  const user = token ? jwtDecode(token) : {};
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -118,8 +122,18 @@ function Home() {
 
     const result = await res.json();
     if (result.success) {
-      alert('댓글 등록 완료');
       setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+      // 댓글 알림 전송
+      socket.emit('sendNotification', {
+        toUserId: result.postOwnerId, // ← 서버에서 댓글 등록 후 응답에 포함되도록 하세요
+        notification: {
+          senderId: user.userId,
+          type: result.type,
+          extra: { text: result.text, file_url: result.thumbnailUrl },
+          post: { post_id: postId },
+          created_at: new Date().toISOString(),
+        }
+      });
     }
   };
 
@@ -145,6 +159,16 @@ function Home() {
           like_count: p.like_count + (data.liked ? 1 : -1)
         } : p
       ));
+      if (data.liked) {
+        socket.emit('sendNotification', {
+          toUserId: data.postOwnerId, // ← 서버에서 좋아요 응답에 포함되도록 하세요
+          notification: {
+            type: 'like',
+            post: { post_id: postId, file_url: data.thumbnailUrl },
+            extra: {}
+          }
+        });
+      }
     }
   };
   // 모달에서 좋아요, 댓글 달면 실시간으로 홈 페이지에 반영하는 콜백함수
