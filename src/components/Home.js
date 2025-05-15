@@ -130,8 +130,7 @@ function Home() {
           senderId: user.userId,
           type: result.type,
           extra: { text: result.text, file_url: result.thumbnailUrl },
-          post: { post_id: postId },
-          created_at: new Date().toISOString(),
+          post: { post_id: postId }
         }
       });
     }
@@ -163,8 +162,9 @@ function Home() {
         socket.emit('sendNotification', {
           toUserId: data.postOwnerId, // ← 서버에서 좋아요 응답에 포함되도록 하세요
           notification: {
+            senderId: user.userId,
             type: 'like',
-            post: { post_id: postId, file_url: data.thumbnailUrl },
+            post: { post_id: postId },
             extra: {}
           }
         });

@@ -1,5 +1,6 @@
 export async function authFetch(url, options = {}) {
   const token = localStorage.getItem('token');
+  console.log('토큰 있음?', token);
   const headers = options.headers || {};
 
   // FormData가 아닌 경우에만 Content-Type 설정

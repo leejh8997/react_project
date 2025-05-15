@@ -12,6 +12,7 @@ import PostModal from './PostModal';
 import { authFetch } from '../utils/authFetch';
 import { jwtDecode } from 'jwt-decode';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import socket from '../utils/socket';
 
 function Profile() {
   const token = localStorage.getItem('token');
@@ -36,9 +37,11 @@ function Profile() {
   const navigate = useNavigate();
   const location = useLocation();
 
+
   const fetchUserInfo = async () => {
     const res = await authFetch(`http://localhost:3005/users/${username}`);
     const data = await res.json();
+    console.log("userinfo====>", data)
     if (data.success) {
       setUserInfo(data.user);
       setProfileImage(data.user.profile_image);
@@ -70,6 +73,7 @@ function Profile() {
   }, [username]);
 
   const handleFollowList = (type) => {
+    if (!type) return;
     setFollowListType(type);
     setFollowModalOpen(true);
 
@@ -83,18 +87,29 @@ function Profile() {
   };
 
   const handleFollow = async (targetUserId) => {
-    const res = await authFetch(`http://localhost:3005/follow`, {
-      method: 'POST',
-      body: JSON.stringify({ targetUserId }),
-      headers: { 'Content-Type': 'application/json' }
-    });
+    // const res = await authFetch(`http://localhost:3005/follow`, {
+    //   method: 'POST',
+    //   body: JSON.stringify({ targetUserId }),
+    //   headers: { 'Content-Type': 'application/json' }
+    // });
+    
+    // const data = await res.json();
+    // if (data.success) {
+      // 🔔 알림 보내기
+      socket.emit('sendNotification', {
+        toUserId: userInfo.user_id,
+        notification: {
+          senderId: user.userId,
+          type: 'follow-request'
+        }
+      });
 
-    const data = await res.json();
-    if (data.success) {
-      // 팔로우 후 목록 다시 로드
-      handleFollowList(followListType);
-      fetchUserInfo(); // 사용자 정보 다시 불러오기 (카운트 갱신용)
-    }
+      // // 팔로우 후 목록 다시 로드
+      // if (followModalOpen && followListType) {
+      //   handleFollowList(followListType);
+      // }
+      // fetchUserInfo(); // 사용자 정보 다시 불러오기 (카운트 갱신용)
+    // }
   };
   // 팔로잉 => 언팔
   const handleUnfollow = async (targetUserId) => {
@@ -105,7 +120,9 @@ function Profile() {
     });
     const data = await res.json();
     if (data.success) {
-      handleFollowList(followListType); // 다시 목록 새로고침
+      if (followModalOpen && followListType) {
+        handleFollowList(followListType); // 다시 목록 새로고침
+      }
       fetchUserInfo(); // 사용자 정보 다시 불러오기 (카운트 갱신용)
     }
   };
@@ -119,7 +136,9 @@ function Profile() {
 
     const data = await res.json();
     if (data.success) {
-      handleFollowList(followListType); // 목록 다시 로드
+      if (followModalOpen && followListType) {
+        handleFollowList(followListType); // 목록 다시 로드
+      }
       fetchUserInfo(); // 카운트 반영
     }
   };
@@ -197,8 +216,24 @@ function Profile() {
               </>
             ) : (
               <>
-                <Button variant="outlined">
-                  {userInfo?.isFollowing ? '팔로잉' : '팔로우'}
+                <Button
+                  variant="outlined"
+                  onClick={async () => {
+                    if (userInfo?.isFollowing) {
+                      await handleUnfollow(userInfo.user_id);
+                    } else {
+                      await handleFollow(userInfo.user_id);
+                    }
+                    fetchUserInfo(); // 팔로우 상태 갱신
+                  }}
+                  onMouseEnter={() => userInfo?.isFollowing && setHoveredUserId(userInfo.user_id)}
+                  onMouseLeave={() => userInfo?.isFollowing && setHoveredUserId(null)}
+                >
+                  {userInfo?.isFollowing
+                    ? hoveredUserId === userInfo.user_id
+                      ? '언팔로우'
+                      : '팔로잉'
+                    : '팔로우'}
                 </Button>
                 {userInfo?.isFollowing && (
                   <Button variant="outlined" onClick={() => navigate(`/messages/${userInfo.user_id}`)}>

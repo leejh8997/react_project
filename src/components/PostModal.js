@@ -17,6 +17,8 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import Slider from 'react-slick';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import socket from '../utils/socket';
+import { jwtDecode } from 'jwt-decode';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ko');
@@ -73,6 +75,8 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
+  const token = localStorage.getItem('token');
+  const user = token ? jwtDecode(token) : {};
 
   useEffect(() => {
     if (post && open) {
@@ -138,6 +142,15 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
       setReplyTo(null);
       loadComments(1, true);
       if (onCommentAdd) onCommentAdd(post.post_id);
+      socket.emit('sendNotification', {
+        toUserId: data.postOwnerId, // ← 서버에서 댓글 등록 후 응답에 포함되도록 하세요
+        notification: {
+          senderId: user.userId,
+          type: data.type,
+          extra: { text: data.text, file_url: data.thumbnailUrl },
+          post: { post_id: post.post_id }
+        }
+      });
     }
   };
 
@@ -148,6 +161,17 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
       setLiked(data.liked);
       setLikeCount(prev => prev + (data.liked ? 1 : -1));
       if (onLikeToggle) onLikeToggle(post.post_id, data.liked);
+    }
+    if (data.liked) {
+      socket.emit('sendNotification', {
+        toUserId: data.postOwnerId, // ← 서버에서 좋아요 응답에 포함되도록 하세요
+        notification: {
+          senderId: user.userId,
+          type: 'like',
+          post: { post_id: post.post_id },
+          extra: {}
+        }
+      });
     }
   };
 
@@ -187,8 +211,8 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
                         sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                       <button onClick={handleToggleMute} className="mute-button">
-                        {isMuted ? <VolumeOffIcon sx={{ width: 20, height: 20 }} /> : 
-                        <VolumeUpIcon sx={{ width: 20, height: 20 }} />}
+                        {isMuted ? <VolumeOffIcon sx={{ width: 20, height: 20 }} /> :
+                          <VolumeUpIcon sx={{ width: 20, height: 20 }} />}
                       </button>
                     </>
                   ) : (

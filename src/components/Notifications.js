@@ -1,5 +1,5 @@
 // components/Notifications.js
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   Box, Typography, Avatar, Button, Divider
 } from '@mui/material';
@@ -15,8 +15,8 @@ export default function Notifications({ open, onClose }) {
   const [notifications, setNotifications] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const token = localStorage.getItem('token');
-  const currentUser = token ? jwtDecode(token) : {};
+  const token = useMemo(() => localStorage.getItem('token'), []);
+const currentUser = useMemo(() => token ? jwtDecode(token) : null, [token]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -29,34 +29,54 @@ export default function Notifications({ open, onClose }) {
   }, [open, onClose]);
 
   useEffect(() => {
-    if (currentUser) {
-      const { userId } = currentUser;
-      socket.emit('register', userId);
+    if (open && currentUser?.userId) {
+      authFetch(`http://localhost:3005/notifications?userId=${currentUser.userId}`)
+        .then(res => res.json())
+        .then(data => {
+          console.log("notification========>", data.notifications);
+          if (data.success) {
+            const formatted = data.notifications.map(n => ({
+              notification_id: n.notification_id,
+              type: n.type,
+              created_at: n.created_at,
+              is_read: n.is_read,
+              extra: n.extra || {},
+              sender: {
+                user_id: n.sender_user_id,
+                username: n.sender_username,
+                profile_image: n.sender_profile_image
+              },
+              post: n.post_id ? {
+                post_id: n.post_id,
+                file_url: n.file_url,
+                media_type: n.media_type
+              } : null
+            }));
+            setNotifications(formatted);
+          }
+        })
+        .catch(err => {
+          console.error('알림 목록 불러오기 실패:', err);
+        });
     }
+  }, [open, currentUser]);
 
-    socket.on('receiveNotification', (notification) => {
-      setNotifications(prev => [notification, ...prev]);
-    });
 
-    return () => {
-      socket.off('receiveNotification');
-    };
-  }, []);
 
   const renderMessage = (n) => {
     switch (n.type) {
       case 'comment':
-        const shortText1 = n.extra.text.length > 20 ? n.extra.text.slice(0, 20) + '...' : n.extra.text;
+        const shortText1 = n.extra?.text?.length > 20 ? n.extra.text.slice(0, 20) + '...' : n.extra?.text || '';
         return (
           <>
             <b>{n.sender.username}</b>님이 게시글에 댓글을 남겼습니다. <span style={{ color: '#666' }}>: {shortText1}</span>
           </>
         );
       case 'reply':
-         const shortText2 = n.extra.text.length > 20 ? n.extra.text.slice(0, 20) + '...' : n.extra.text;
+        const shortText2 = n.extra?.text?.length > 20 ? n.extra.text.slice(0, 20) + '...' : n.extra?.text || '';
         return (
           <>
-            <b>{n.sender.username}</b>님이 댓글에 답글을 남겼습니다. <span style={{ color: '#666' }}>: {shortText2}</span>
+            <b>{n.sender.username}</b>님이 회원님을 언급하였습니다. <span style={{ color: '#666' }}>: {shortText2}</span>
           </>
         );
       case 'like':
@@ -161,7 +181,6 @@ export default function Notifications({ open, onClose }) {
               {formatDistanceToNowStrict(new Date(n.created_at), { addSuffix: true, locale: ko })}
             </Typography>
           </Box>
-          {n.post && <Box component="img" src={n.post.file_url} sx={{ width: 44, height: 44, objectFit: 'cover' }} />}
           {n.type === 'follow-request' ? (
             <Box>
               <Button size="small" variant="contained" onClick={() => handleAcceptFollow(n.notification_id, n.sender.user_id)}>확인</Button>

@@ -27,8 +27,11 @@ function App() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifVisible, setNotifVisible] = useState(false);
+  // const [notification, setNotifications] = useState([]);
   // ✅ 1. App.jsx - unreadCount 상태 추가
   const [unreadCount, setUnreadCount] = useState(0);
+  const token = localStorage.getItem('token');
+  const currentUser = token ? jwtDecode(token) : {};
 
   const handleSearchToggle = () => {
     if (!searchOpen && !searchVisible) {
@@ -55,19 +58,33 @@ function App() {
   };
 
   useEffect(() => {
-    socket.on('receiveNotification', () => {
-      setUnreadCount((count) => count + 1); // 뱃지 증가
-    });
+    if (!currentUser) return;
+
+    const { userId } = currentUser;
+    socket.emit('register', userId);
+
+    const handleReceive = (notification) => {
+      console.log('📉 알림 리시브 이벤트 수신!');
+      setUnreadCount((count) => count + 1);
+    };
+    const handleDecrease = () => {
+      console.log('📉 알림 감소 이벤트 수신!');
+      setUnreadCount((count) => Math.max(count - 1, 0));
+    };
+
+    socket.on('receiveNotification', handleReceive);
+    socket.on('decreaseNotificationCount', handleDecrease);
 
     return () => {
       socket.off('receiveNotification');
+      socket.off('decreaseNotificationCount');
     };
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const { userId } = jwtDecode(token);
+    if (!currentUser) return;
+    const { userId } = currentUser;
+
     authFetch(`http://localhost:3005/notifications/unread-count?userId=${userId}`)
       .then(res => res.json())
       .then(data => {
