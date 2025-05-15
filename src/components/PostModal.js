@@ -75,6 +75,7 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
+  const commentInputRef = useRef(null);
   const token = localStorage.getItem('token');
   const user = token ? jwtDecode(token) : {};
 
@@ -316,7 +317,13 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
                     <IconButton onClick={handleToggleLike}>
                       {liked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
                     </IconButton>
-                    <IconButton><ChatBubbleOutlineIcon /></IconButton>
+                    <IconButton onClick={() => {
+                      if (commentInputRef.current) {
+                        commentInputRef.current.focus();
+                      }
+                    }}>
+                      <ChatBubbleOutlineIcon />
+                    </IconButton>
                     <IconButton><SendOutlinedIcon /></IconButton>
                   </Box>
                   <IconButton><BookmarkBorderIcon /></IconButton>
@@ -327,6 +334,7 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
 
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                 <InputBase
+                  inputRef={commentInputRef}
                   fullWidth
                   placeholder="댓글 달기..."
                   value={input}

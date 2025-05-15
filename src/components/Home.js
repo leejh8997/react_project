@@ -302,7 +302,10 @@ function Home() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Box>
                   <IconButton onClick={() => handleToggleLike(post.post_id)}>{post.is_liked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}</IconButton>
-                  <IconButton><ChatBubbleOutlineIcon /></IconButton>
+                  {/* 말풍선 아이콘 클릭 시: */}
+                  <IconButton onClick={() => handleOpenModal(post)}>
+                    <ChatBubbleOutlineIcon />
+                  </IconButton>
                   <IconButton><SendOutlinedIcon /></IconButton>
                 </Box>
                 <IconButton><BookmarkBorderIcon /></IconButton>
