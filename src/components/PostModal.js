@@ -11,6 +11,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -60,7 +61,7 @@ function Arrow({ className, style, onClick, direction, isVisible }) {
   );
 }
 
-function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
+function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd, onBookmarkToggle }) {
   const [comments, setComments] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -75,6 +76,7 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [bookmarked, setBookmarked] = useState(post?.is_bookmarked || false);
   const commentInputRef = useRef(null);
   const token = localStorage.getItem('token');
   const user = token ? jwtDecode(token) : {};
@@ -84,7 +86,7 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
       loadComments(1, true);
       setLiked(post.is_liked || false);
       setLikeCount(post.like_count || 0);
-
+      setBookmarked(post.is_bookmarked || false);
       authFetch(`http://localhost:3005/posts/${post.post_id}`)
         .then(res => res.json())
         .then(data => {
@@ -152,6 +154,20 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
           post: { post_id: post.post_id }
         }
       });
+    }
+  };
+
+  const handleToggleBookmark = async () => {
+    const res = await authFetch('http://localhost:3005/bookmarks', {
+      method: 'POST',
+      body: JSON.stringify({ postId: post.post_id }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    console.log(data);
+    if (data.success) {
+      setBookmarked(data.bookmarked);
+      onBookmarkToggle?.(post.post_id, data.bookmarked); // 🔄 부모에게도 알려줌
     }
   };
 
@@ -326,7 +342,9 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd }) {
                     </IconButton>
                     <IconButton><SendOutlinedIcon /></IconButton>
                   </Box>
-                  <IconButton><BookmarkBorderIcon /></IconButton>
+                  <IconButton onClick={handleToggleBookmark}>
+                    {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+                  </IconButton>
                 </Box>
                 <Typography fontWeight="bold">좋아요 {likeCount.toLocaleString()}개</Typography>
                 <Typography fontSize={12} color="gray">{formatTime(post.created_at)}</Typography>

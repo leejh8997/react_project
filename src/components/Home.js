@@ -17,6 +17,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
 import PostModal from './PostModal';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
@@ -208,6 +209,28 @@ function Home() {
     }
   };
 
+  const handleToggleBookmark = async (postId) => {
+    const res = await authFetch('http://localhost:3005/bookmarks', {
+      method: 'POST',
+      body: JSON.stringify({ postId }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      setFeeds(prev => prev.map(p => p.post_id === postId ? { ...p, is_bookmarked: data.bookmarked } : p));
+    }
+  };
+  const handleModalBookmarkToggle = (postId, bookmarked) => {
+    setFeeds(prev =>
+      prev.map(post =>
+        post.post_id === postId
+          ? { ...post, is_bookmarked: bookmarked }
+          : post
+      )
+    );
+  };
+  
+
   const slidesVisible = isMobile ? 4 : 6;
   const sliderSettings = {
     dots: false,
@@ -308,7 +331,9 @@ function Home() {
                   </IconButton>
                   <IconButton><SendOutlinedIcon /></IconButton>
                 </Box>
-                <IconButton><BookmarkBorderIcon /></IconButton>
+                <IconButton onClick={() => handleToggleBookmark(post.post_id)}>
+                  {post.is_bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+                </IconButton>
               </Box>
               <Typography sx={{ fontWeight: 'bold', fontSize: 14, mb: 0.5 }}>좋아요 {post.like_count.toLocaleString()}개</Typography>
               <Typography fontWeight="bold" sx={{ display: 'inline' }}>{post.username}</Typography>
@@ -336,6 +361,7 @@ function Home() {
         post={selectedPost}
         onLikeToggle={handleModalLikeToggle}
         onCommentAdd={handleModalCommentAdd}
+        onBookmarkToggle={handleModalBookmarkToggle}
       />
     </Box>
   );

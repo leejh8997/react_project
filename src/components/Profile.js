@@ -41,12 +41,34 @@ function Profile() {
   const fetchUserInfo = async () => {
     const res = await authFetch(`http://localhost:3005/users/${username}`);
     const data = await res.json();
-    console.log("userinfo====>", data)
+    console.log("userinfo====>", data);
     if (data.success) {
       setUserInfo(data.user);
       setProfileImage(data.user.profile_image);
     }
   };
+
+  useEffect(() => {
+    if (!username) return;
+
+    if (tab === 0) {
+      // 게시물
+      authFetch(`http://localhost:3005/posts/user/${username}`)
+        .then(res => res.json())
+        .then(data => {
+          console.log("내 게시물====>", data);
+          if (data.success) setPosts(data.posts);
+        });
+    } else if (tab === 1 && isMe) {
+      // 저장됨
+      authFetch(`http://localhost:3005/users/${user.userId}/bookmarks`)
+        .then(res => res.json())
+        .then(data => {
+          console.log("내 북마크====>", data);
+          if (data.success) setPosts(data.posts);
+        });
+    }
+  }, [username, tab]);
 
   useEffect(() => {
     // 페이지 이동이 발생하면 팔로우 모달 닫기
@@ -58,18 +80,6 @@ function Profile() {
   useEffect(() => {
     if (!username) return;
     fetchUserInfo();
-  }, [username]);
-
-  useEffect(() => {
-    if (!username) return;
-    authFetch(`http://localhost:3005/posts/user/${username}`)
-      .then(res => res.json())
-      .then(data => {
-        console.log(data);
-        if (data.success) {
-          setPosts(data.posts);
-        }
-      });
   }, [username]);
 
   const handleFollowList = (type) => {
@@ -92,23 +102,23 @@ function Profile() {
     //   body: JSON.stringify({ targetUserId }),
     //   headers: { 'Content-Type': 'application/json' }
     // });
-    
+
     // const data = await res.json();
     // if (data.success) {
-      // 🔔 알림 보내기
-      socket.emit('sendNotification', {
-        toUserId: userInfo.user_id,
-        notification: {
-          senderId: user.userId,
-          type: 'follow-request'
-        }
-      });
+    // 🔔 알림 보내기
+    socket.emit('sendNotification', {
+      toUserId: userInfo.user_id,
+      notification: {
+        senderId: user.userId,
+        type: 'follow-request'
+      }
+    });
 
-      // // 팔로우 후 목록 다시 로드
-      // if (followModalOpen && followListType) {
-      //   handleFollowList(followListType);
-      // }
-      // fetchUserInfo(); // 사용자 정보 다시 불러오기 (카운트 갱신용)
+    // // 팔로우 후 목록 다시 로드
+    // if (followModalOpen && followListType) {
+    //   handleFollowList(followListType);
+    // }
+    // fetchUserInfo(); // 사용자 정보 다시 불러오기 (카운트 갱신용)
     // }
   };
   // 팔로잉 => 언팔
@@ -278,7 +288,7 @@ function Profile() {
         <Tab label="태그됨" />
       </Tabs>
       <ImageList cols={3} rowHeight={250} sx={{ mt: 2 }}>
-        {(tab === 0 ? posts : []).map(post => (
+       {(tab === 0 || tab === 1 ? posts : []).map(post => (
           <ImageListItem
             key={post.post_id}
             onClick={() => {
