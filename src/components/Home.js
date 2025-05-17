@@ -22,6 +22,7 @@ import PostModal from './PostModal';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import socket from '../utils/socket';
+import MentionInput from './MentionInput';
 import { jwtDecode } from 'jwt-decode';
 
 dayjs.extend(relativeTime);
@@ -124,6 +125,17 @@ function Home() {
     const result = await res.json();
     if (result.success) {
       setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+
+      // ✅ 댓글 수 증가
+      setFeeds(prev =>
+        prev.map(post =>
+          post.post_id === postId
+            ? { ...post, comment_count: post.comment_count + 1 }
+            : post
+        )
+      );
+
+
       // 댓글 알림 전송
       socket.emit('sendNotification', {
         toUserId: result.postOwnerId, // ← 서버에서 댓글 등록 후 응답에 포함되도록 하세요
@@ -135,6 +147,14 @@ function Home() {
         }
       });
     }
+  };
+
+  const handleCloseModal = () => {
+    if (selectedPost) {
+      setCommentInputs(prev => ({ ...prev, [selectedPost.post_id]: '' }));
+    }
+    setModalOpen(false);
+    setSelectedPost(null);
   };
 
   const handleCommentChange = (postId, text) => {
@@ -229,7 +249,7 @@ function Home() {
       )
     );
   };
-  
+
 
   const slidesVisible = isMobile ? 4 : 6;
   const sliderSettings = {
@@ -345,7 +365,14 @@ function Home() {
               </Box>
               <Typography sx={{ mt: 1, fontSize: 14, color: 'gray', cursor: 'pointer' }} onClick={() => handleOpenModal(post)}>댓글 {post.comment_count}개 모두 보기</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <InputBase fullWidth placeholder="댓글 달기..." value={commentInputs[post.post_id] || ''} onChange={e => handleCommentChange(post.post_id, e.target.value)} sx={{ px: 1, fontSize: 14 }} />
+                <Box sx={{ flex: 1 }}>
+                  <MentionInput
+                    value={commentInputs[post.post_id] || ''}
+                    onChange={(text) => handleCommentChange(post.post_id, text)}
+                    handleSubmit={() => handleSubmitComment(post.post_id)}
+                    placeholder={"댓글 달기..."}
+                    />
+                </Box>
                 {commentInputs[post.post_id]?.trim() && (
                   <Button onClick={() => handleSubmitComment(post.post_id)} sx={{ color: 'skyblue', fontWeight: 'bold' }}>게시</Button>
                 )}
@@ -357,7 +384,7 @@ function Home() {
 
       <PostModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={handleCloseModal}
         post={selectedPost}
         onLikeToggle={handleModalLikeToggle}
         onCommentAdd={handleModalCommentAdd}

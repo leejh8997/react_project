@@ -134,7 +134,7 @@
   cursor: pointer;
 }
 
-.caption-box {
+/* .caption-box {
   width: 100%;
   height: 30%;
   resize: none;
@@ -145,7 +145,7 @@
   background-color: #fafafa;
   border-radius: 8px;
   box-sizing: border-box;
-}
+} */
 
 .meta-info {
   padding: 0 16px 16px;

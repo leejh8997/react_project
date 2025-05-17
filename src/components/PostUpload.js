@@ -16,6 +16,7 @@ import { jwtDecode } from 'jwt-decode';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import MentionInput from './MentionInput';
 
 export default function PostUploadModal({ open, onClose }) {
   const token = localStorage.getItem('token');
@@ -38,6 +39,7 @@ export default function PostUploadModal({ open, onClose }) {
   }, [files]);
 
   useEffect(() => {
+    console.log("user",user);
     const handleClickOutside = (e) => {
       if (
         showEmojiPicker &&
@@ -272,11 +274,17 @@ export default function PostUploadModal({ open, onClose }) {
                     <span className="profile-username">{user.username}</span>
                   </div>
 
-                  <textarea
+                  {/* <textarea
                     className="caption-box"
                     placeholder="문구 입력..."
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
+                  /> */}
+                  <MentionInput
+                    minRows={5}
+                    value={caption}
+                    onChange={setCaption}
+                    placeholder={"문구 입력..."}
                   />
 
                   <div className="emoji-limit" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>

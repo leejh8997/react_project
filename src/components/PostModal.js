@@ -20,6 +20,7 @@ import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import socket from '../utils/socket';
 import { jwtDecode } from 'jwt-decode';
+import MentionInput from './MentionInput';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ko');
@@ -90,6 +91,7 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd, onBookmark
       authFetch(`http://localhost:3005/posts/${post.post_id}`)
         .then(res => res.json())
         .then(data => {
+          console.log("post===>", data);
           if (data.success) {
             setFiles(data.post.files || []);
             setCurrentSlide(0);
@@ -351,17 +353,19 @@ function PostModal({ open, onClose, post, onLikeToggle, onCommentAdd, onBookmark
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <InputBase
-                  inputRef={commentInputRef}
-                  fullWidth
-                  placeholder="댓글 달기..."
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  sx={{ px: 1, fontSize: 14 }}
-                />
+                <Box sx={{ flex: 1 }}>
+                  <MentionInput
+                    inputRef={commentInputRef}
+                    value={input}
+                    onChange={setInput}
+                    handleSubmit={handleSubmit}
+                    placeholder={"댓글 달기..."}
+                  />
+                </Box>
                 {input.trim() && (
                   <Button onClick={handleSubmit} sx={{ color: 'skyblue', fontWeight: 'bold' }}>게시</Button>
                 )}
+
               </Box>
             </Box>
           </Box>
