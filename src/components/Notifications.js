@@ -9,6 +9,7 @@ import PostModal from './PostModal';
 import { formatDistanceToNowStrict, isToday } from 'date-fns';
 import ko from 'date-fns/locale/ko';
 import { authFetch } from '../utils/authFetch';
+import NotificationPostModal from './NotificationPostModal';
 
 export default function Notifications({ open, onClose }) {
   const panelRef = useRef();
@@ -16,17 +17,18 @@ export default function Notifications({ open, onClose }) {
   const [selectedPost, setSelectedPost] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const token = useMemo(() => localStorage.getItem('token'), []);
-const currentUser = useMemo(() => token ? jwtDecode(token) : null, [token]);
+  const currentUser = useMemo(() => token ? jwtDecode(token) : null, [token]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
+      if (modalOpen) return;
       if (open && panelRef.current && !panelRef.current.contains(e.target)) {
         onClose(); // 외부 클릭 시 패널 닫기
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open, onClose]);
+  }, [open, onClose, modalOpen]);
 
   useEffect(() => {
     if (open && currentUser?.userId) {
@@ -53,6 +55,7 @@ const currentUser = useMemo(() => token ? jwtDecode(token) : null, [token]);
               } : null
             }));
             setNotifications(formatted);
+            console.log("notificationFormatted====>", notifications);
           }
         })
         .catch(err => {
@@ -61,22 +64,19 @@ const currentUser = useMemo(() => token ? jwtDecode(token) : null, [token]);
     }
   }, [open, currentUser]);
 
-
-
   const renderMessage = (n) => {
     switch (n.type) {
       case 'comment':
-        const shortText1 = n.extra?.text?.length > 20 ? n.extra.text.slice(0, 20) + '...' : n.extra?.text || '';
+        const shortText = n.extra?.text?.length > 20 ? n.extra.text.slice(0, 20) + '...' : n.extra?.text || '';
         return (
           <>
-            <b>{n.sender.username}</b>님이 게시글에 댓글을 남겼습니다. <span style={{ color: '#666' }}>: {shortText1}</span>
+            <b>{n.sender.username}</b>님이 게시글에 댓글을 남겼습니다. <span style={{ color: '#666' }}>: {shortText}</span>
           </>
         );
-      case 'reply':
-        const shortText2 = n.extra?.text?.length > 20 ? n.extra.text.slice(0, 20) + '...' : n.extra?.text || '';
+      case 'mention':
         return (
           <>
-            <b>{n.sender.username}</b>님이 회원님을 언급하였습니다. <span style={{ color: '#666' }}>: {shortText2}</span>
+            <b>{n.sender.username}</b>님이 회원님을 언급하였습니다.
           </>
         );
       case 'like':
@@ -215,7 +215,7 @@ const currentUser = useMemo(() => token ? jwtDecode(token) : null, [token]);
         </Box>
       ))}
 
-      <PostModal open={modalOpen} onClose={() => setModalOpen(false)} post={selectedPost} />
+      <NotificationPostModal open={modalOpen} onClose={() => setModalOpen(false)} post={selectedPost} />
     </Box>
   ) : null;
 }

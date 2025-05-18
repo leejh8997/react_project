@@ -164,6 +164,7 @@ export default function Search({ open, onClose }) {
                 navigate(`/profile/${item.username}`);
                 onClose(); // 패널 닫기
               } else if (searchType === 'post') {
+                console.log(item);
                 setSelectedPost(item);
                 setModalOpen(true); // 모달만 열고 패널 유지
               }

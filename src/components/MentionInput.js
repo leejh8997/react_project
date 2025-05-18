@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Box, InputBase, Paper, Avatar, Typography } from '@mui/material';
 import { authFetch } from '../utils/authFetch';
 
-function MentionInput({ value, onChange, handleSubmit, inputRef, placeholder, minRows }) {
+function MentionInput({ value, onChange, handleSubmit, inputRef, placeholder, minRows, suggestionPosition = 'top' }) {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [cursor, setCursor] = useState(null);
     const localInputRef = useRef(null);
-    const mergedRef = inputRef || localInputRef;
+    const mergedRef = inputRef ?? localInputRef;
 
     const getLastMentionKeyword = (text, caretPosition) => {
         const subText = text.substring(0, caretPosition);
@@ -49,9 +49,9 @@ function MentionInput({ value, onChange, handleSubmit, inputRef, placeholder, mi
 
         setTimeout(() => {
             const pos = newPrefix.length;
-            if (inputRef.current) {
-                inputRef.current.setSelectionRange(pos, pos);
-                inputRef.current.focus();
+            if (mergedRef.current) {
+                mergedRef.current.setSelectionRange(pos, pos);
+                mergedRef.current.focus();
             }
         }, 0);
     };
@@ -77,11 +77,27 @@ function MentionInput({ value, onChange, handleSubmit, inputRef, placeholder, mi
             />
 
             {showSuggestions && suggestions.length > 0 && (
-                <Paper elevation={3} sx={{ position: 'absolute', bottom: '100%', left: 0, zIndex: 10, width: '100%' }}>
+                <Paper
+                    elevation={3}
+                    sx={{
+                        position: 'absolute',
+                        [suggestionPosition]: '25%',
+                        left: 0,
+                        zIndex: 10,
+                        width: '100%',
+                    }}
+                >
                     {suggestions.map((user) => (
                         <Box
                             key={user.user_id}
-                            sx={{ display: 'flex', alignItems: 'center', px: 1, py: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' } }}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                px: 1,
+                                py: 1,
+                                cursor: 'pointer',
+                                '&:hover': { backgroundColor: '#f0f0f0' }
+                            }}
                             onMouseDown={() => handleSuggestionClick(user)}
                         >
                             <Avatar src={user.profile_image} sx={{ width: 32, height: 32, mr: 1 }} />

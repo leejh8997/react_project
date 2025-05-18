@@ -285,6 +285,7 @@ export default function PostUploadModal({ open, onClose }) {
                     value={caption}
                     onChange={setCaption}
                     placeholder={"문구 입력..."}
+                    suggestionPosition="top"
                   />
 
                   <div className="emoji-limit" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>

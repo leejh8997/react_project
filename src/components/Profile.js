@@ -8,10 +8,12 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import PostModal from './PostModal';
 import { authFetch } from '../utils/authFetch';
 import { jwtDecode } from 'jwt-decode';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import ProfileEditModal from './ProfileEditModal';
 import socket from '../utils/socket';
 
 function Profile() {
@@ -32,6 +34,7 @@ function Profile() {
   const [hoveredUserId, setHoveredUserId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingUnfollowId, setPendingUnfollowId] = useState(null);
+  const [editOpen, setEditOpen] = useState(false);
   const fileInputRef = useRef(null);
   const isMe = user.username === username;
   const navigate = useNavigate();
@@ -220,7 +223,7 @@ function Profile() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             {isMe ? (
               <>
-                <Button variant="outlined">프로필 편집</Button>
+                <Button variant="outlined" onClick={() => setEditOpen(true)}>프로필 편집</Button>
                 <Button variant="outlined">보관된 스토리 보기</Button>
                 <IconButton><SettingsIcon /></IconButton>
               </>
@@ -470,6 +473,7 @@ function Profile() {
           </Box>
         </Fade>
       </Modal>
+      <ProfileEditModal open={editOpen} onClose={() => setEditOpen(false)} user={userInfo} />
     </Box>
   );
 }

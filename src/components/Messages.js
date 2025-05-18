@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { Add, Close, InsertEmoticon, Image, Send, Videocam } from '@mui/icons-material';
 import { authFetch } from '../utils/authFetch';
+import ForumIcon from '@mui/icons-material/Forum';
 import { jwtDecode } from 'jwt-decode';
 
 
@@ -21,7 +22,7 @@ function Messages() {
 
   useEffect(() => {
     if (!user.userId) return;
-
+    console.log(user);
     fetch(`http://localhost:3005/dm/rooms?userId=${user.userId}`)
       .then(res => res.json())
       .then(data => {
@@ -155,7 +156,7 @@ function Messages() {
       <Box width={320} borderRight="1px solid #ddd" display="flex" flexDirection="column">
         {/* 헤더 */}
         <Box display="flex" justifyContent="space-between" alignItems="center" p={2}>
-          <Typography fontWeight="bold">{user.userName}</Typography>
+          <Typography fontWeight="bold">{user.username}</Typography>
           <IconButton onClick={() => setShowNewChatModal(true)}>
             <Add />
           </IconButton>
@@ -163,7 +164,7 @@ function Messages() {
 
         {/* 내 프로필 */}
         <Box display="flex" flexDirection="column" alignItems="center" py={1}>
-          <Avatar src="/images/profile1.jpg" sx={{ width: 56, height: 56 }} />
+          <Avatar src={user.profileImage} sx={{ width: 56, height: 56 }} />
           <Typography variant="body2">내 메모</Typography>
         </Box>
         <Divider />
@@ -223,7 +224,7 @@ function Messages() {
       <Box flex={1} display="flex" flexDirection="column" justifyContent="center" alignItems="center">
         {!selectedRoom ? (
           <>
-            <img src="/messenger-icon.png" width={56} alt="icon" />
+            <ForumIcon sx={{ fontSize: 56 }} />
             <Typography fontWeight="bold" mt={2}>내 메시지</Typography>
             <Typography variant="body2" color="text.secondary">친구나 그룹에 비공개 사진과 메시지를 보내보세요</Typography>
             <Button variant="contained" sx={{ mt: 2 }} onClick={() => setShowNewChatModal(true)}>메시지 보내기</Button>
@@ -232,11 +233,11 @@ function Messages() {
           <Box width="100%" height="100%" display="flex" flexDirection="column">
             {/* 상단 프로필 */}
             <Box display="flex" justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid #ddd">
-              <Typography fontWeight="bold">설정</Typography>
               <Box display="flex" alignItems="center">
-                <Avatar src={selectedRoom.profile} sx={{ width: 40, height: 40, mr: 1 }} />
-                <Typography fontWeight="bold">{selectedRoom.username}</Typography>
+                <Avatar src={user.profileImage} sx={{ width: 40, height: 40, mr: 1 }} />
+                <Typography fontWeight="bold">{user.username}</Typography>
               </Box>
+              <Typography fontWeight="bold">설정</Typography>
             </Box>
 
             {/* 가운데 프로필 + 채팅 영역 */}

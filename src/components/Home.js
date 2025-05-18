@@ -250,7 +250,6 @@ function Home() {
     );
   };
 
-
   const slidesVisible = isMobile ? 4 : 6;
   const sliderSettings = {
     dots: false,
@@ -371,7 +370,8 @@ function Home() {
                     onChange={(text) => handleCommentChange(post.post_id, text)}
                     handleSubmit={() => handleSubmitComment(post.post_id)}
                     placeholder={"댓글 달기..."}
-                    />
+                    suggestionPosition="bottom"
+                  />
                 </Box>
                 {commentInputs[post.post_id]?.trim() && (
                   <Button onClick={() => handleSubmitComment(post.post_id)} sx={{ color: 'skyblue', fontWeight: 'bold' }}>게시</Button>
