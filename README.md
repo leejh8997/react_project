@@ -3,13 +3,6 @@
 인스타그램을 참고하여 만든 SNS 웹 애플리케이션입니다.  
 사용자는 게시글 업로드, 댓글/답글, 좋아요, 북마크, 팔로우, 실시간 알림, DM 기능 등을 사용할 수 있습니다.
 
-> **기술 스택**  
-> Frontend: React, React Router, MUI, react-slick  
-> Backend: Node.js, Express  
-> Database: MySQL  
-> Real-time: Socket.IO  
-> 인증: JWT 기반 로그인 시스템
-
 ---
 
 ## 📆 개발 기간
