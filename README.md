@@ -50,7 +50,8 @@
 ---
 
 ## 📄 페이지별 기능
-![Uploading image.png…]()
+![image](https://github.com/user-attachments/assets/bce0098a-1b5b-4216-9c83-8128e4627a6e)
+
 
 
 ### 🔐 로그인 페이지 (login)
