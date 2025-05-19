@@ -20,55 +20,55 @@ const upload = multer({ storage });
  * @access  Private
  */
 router.post('/conversations', authMiddleware, async (req, res) => {
-    const myId = req.user.userId;
-    const { participants, isGroup, title } = req.body;
+  const myId = req.user.userId;
+  const { participants, isGroup, title } = req.body;
 
-    // 내 ID를 포함한 전체 유저 배열
-    const allParticipants = [...new Set([myId, ...participants])];
+  // 내 ID를 포함한 전체 유저 배열
+  const allParticipants = [...new Set([myId, ...participants])];
 
-    if (!isGroup && allParticipants.length !== 2) {
-        return res.status(400).json({ success: false, message: '1:1 대화는 정확히 두 명이어야 합니다.' });
-    }
+  if (!isGroup && allParticipants.length !== 2) {
+    return res.status(400).json({ success: false, message: '1:1 대화는 정확히 두 명이어야 합니다.' });
+  }
 
-    try {
-        let conversationId;
+  try {
+    let conversationId;
 
-        if (!isGroup) {
-            // 1:1 → 기존 대화방 있는지 확인
-            const [existing] = await db.query(`
+    if (!isGroup) {
+      // 1:1 → 기존 대화방 있는지 확인
+      const [existing] = await db.query(`
                 SELECT c.conversation_id
                 FROM dm_conversations c
                 JOIN dm_participants p1 ON c.conversation_id = p1.conversation_id
                 JOIN dm_participants p2 ON c.conversation_id = p2.conversation_id
                 WHERE c.is_group = false
                 AND p1.user_id = ? AND p2.user_id = ?`,
-                [myId, participants[0]]
-            );
+        [myId, participants[0]]
+      );
 
-            if (existing.length > 0) {
-                return res.json({ success: true, conversationId: existing[0].conversation_id, message: '기존 대화방 반환' });
-            }
-        }
-
-        // 새 대화방 생성
-        const [result] = await db.query(
-            `INSERT INTO dm_conversations (title, is_group) VALUES (?, ?)`,
-            [title || null, isGroup]
-        );
-        conversationId = result.insertId;
-
-        // 참여자 추가
-        const values = allParticipants.map(uid => [conversationId, uid]);
-        await db.query(
-            `INSERT INTO dm_participants (conversation_id, user_id) VALUES ?`,
-            [values]
-        );
-
-        res.json({ success: true, conversationId, message: '새 대화방 생성 완료' });
-    } catch (err) {
-        console.error('대화방 생성 실패:', err);
-        res.status(500).send('Server Error');
+      if (existing.length > 0) {
+        return res.json({ success: true, conversationId: existing[0].conversation_id, message: '기존 대화방 반환' });
+      }
     }
+
+    // 새 대화방 생성
+    const [result] = await db.query(
+      `INSERT INTO dm_conversations (title, is_group) VALUES (?, ?)`,
+      [title || null, isGroup]
+    );
+    conversationId = result.insertId;
+
+    // 참여자 추가
+    const values = allParticipants.map(uid => [conversationId, uid]);
+    await db.query(
+      `INSERT INTO dm_participants (conversation_id, user_id) VALUES ?`,
+      [values]
+    );
+
+    res.json({ success: true, conversationId, message: '새 대화방 생성 완료' });
+  } catch (err) {
+    console.error('대화방 생성 실패:', err);
+    res.status(500).send('Server Error');
+  }
 });
 //대화방 목록 불러오기 API
 router.get('/rooms', async (req, res) => {
@@ -282,55 +282,55 @@ router.post('/upload', upload.array('file'), (req, res) => {
  * @access  Private
  */
 router.post('/conversations/:id/messages', authMiddleware, async (req, res) => {
-    const myId = req.user.userId;
-    const conversationId = req.params.id;
-    const { text } = req.body;
+  const myId = req.user.userId;
+  const conversationId = req.params.id;
+  const { text } = req.body;
 
-    if (!text || text.trim() === '') {
-        return res.status(400).json({ success: false, message: '메시지 내용을 입력해주세요.' });
+  if (!text || text.trim() === '') {
+    return res.status(400).json({ success: false, message: '메시지 내용을 입력해주세요.' });
+  }
+
+  try {
+    // 1. 참여 여부 확인
+    const [check] = await db.query(
+      `SELECT * FROM dm_participants WHERE conversation_id = ? AND user_id = ?`,
+      [conversationId, myId]
+    );
+
+    if (check.length === 0) {
+      return res.status(403).json({ success: false, message: '이 대화방에 참여한 적이 없습니다.' });
     }
 
-    try {
-        // 1. 참여 여부 확인
-        const [check] = await db.query(
-            `SELECT * FROM dm_participants WHERE conversation_id = ? AND user_id = ?`,
-            [conversationId, myId]
-        );
+    // 2. 메시지 저장
+    const [result] = await db.query(
+      `INSERT INTO dm_messages (conversation_id, sender_id, text) VALUES (?, ?, ?)`,
+      [conversationId, myId, text]
+    );
+    const messageId = result.insertId;
 
-        if (check.length === 0) {
-            return res.status(403).json({ success: false, message: '이 대화방에 참여한 적이 없습니다.' });
-        }
+    // 3. 읽음 상태: 보낸 사람 외 모든 참여자에 대해 is_read = false
+    const [otherUsers] = await db.query(
+      `SELECT user_id FROM dm_participants WHERE conversation_id = ? AND user_id != ?`,
+      [conversationId, myId]
+    );
 
-        // 2. 메시지 저장
-        const [result] = await db.query(
-            `INSERT INTO dm_messages (conversation_id, sender_id, text) VALUES (?, ?, ?)`,
-            [conversationId, myId, text]
-        );
-        const messageId = result.insertId;
-
-        // 3. 읽음 상태: 보낸 사람 외 모든 참여자에 대해 is_read = false
-        const [otherUsers] = await db.query(
-            `SELECT user_id FROM dm_participants WHERE conversation_id = ? AND user_id != ?`,
-            [conversationId, myId]
-        );
-
-        if (otherUsers.length > 0) {
-            const readStatusValues = otherUsers.map(user => [messageId, user.user_id, false]);
-            await db.query(
-                `INSERT INTO dm_read_status (message_id, user_id, is_read) VALUES ?`,
-                [readStatusValues]
-            );
-        }
-
-        res.json({
-            success: true,
-            messageId,
-            message: '메시지 전송 완료'
-        });
-    } catch (err) {
-        console.error('메시지 전송 실패:', err);
-        res.status(500).send('Server Error');
+    if (otherUsers.length > 0) {
+      const readStatusValues = otherUsers.map(user => [messageId, user.user_id, false]);
+      await db.query(
+        `INSERT INTO dm_read_status (message_id, user_id, is_read) VALUES ?`,
+        [readStatusValues]
+      );
     }
+
+    res.json({
+      success: true,
+      messageId,
+      message: '메시지 전송 완료'
+    });
+  } catch (err) {
+    console.error('메시지 전송 실패:', err);
+    res.status(500).send('Server Error');
+  }
 });
 router.post('/read', async (req, res) => {
   const { roomId, userId } = req.body;
@@ -353,7 +353,7 @@ router.post('/read', async (req, res) => {
 
       try {
         readList = JSON.parse(msg.read_by || '[]');
-      } catch (e) {}
+      } catch (e) { }
 
       if (!readList.includes(String(userId))) {
         readList.push(String(userId));
@@ -421,35 +421,35 @@ router.post('/read', async (req, res) => {
  * @access  Private
  */
 router.delete('/messages/:id', authMiddleware, async (req, res) => {
-    const myId = req.user.userId;
-    const messageId = req.params.id;
+  const myId = req.user.userId;
+  const messageId = req.params.id;
 
-    try {
-        // 1. 해당 메시지가 본인의 것인지 확인
-        const [rows] = await db.query(
-            `SELECT sender_id FROM dm_messages WHERE message_id = ?`,
-            [messageId]
-        );
+  try {
+    // 1. 해당 메시지가 본인의 것인지 확인
+    const [rows] = await db.query(
+      `SELECT sender_id FROM dm_messages WHERE message_id = ?`,
+      [messageId]
+    );
 
-        if (rows.length === 0) {
-            return res.status(404).json({ success: false, message: '메시지를 찾을 수 없습니다.' });
-        }
-
-        if (rows[0].sender_id !== myId) {
-            return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
-        }
-
-        // 2. 삭제 처리
-        await db.query(
-            `UPDATE dm_messages SET is_deleted = true WHERE message_id = ?`,
-            [messageId]
-        );
-
-        res.json({ success: true, message: '메시지 삭제 완료' });
-    } catch (err) {
-        console.error('메시지 삭제 실패:', err);
-        res.status(500).send('Server Error');
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: '메시지를 찾을 수 없습니다.' });
     }
+
+    if (rows[0].sender_id !== myId) {
+      return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
+    }
+
+    // 2. 삭제 처리
+    await db.query(
+      `UPDATE dm_messages SET is_deleted = true WHERE message_id = ?`,
+      [messageId]
+    );
+
+    res.json({ success: true, message: '메시지 삭제 완료' });
+  } catch (err) {
+    console.error('메시지 삭제 실패:', err);
+    res.status(500).send('Server Error');
+  }
 });
 /**
  * @route   DELETE /dm/conversations/:id
@@ -457,30 +457,107 @@ router.delete('/messages/:id', authMiddleware, async (req, res) => {
  * @access  Private
  */
 router.delete('/conversations/:id', authMiddleware, async (req, res) => {
-    const myId = req.user.userId;
-    const conversationId = req.params.id;
+  const myId = req.user.userId;
+  const conversationId = req.params.id;
 
-    try {
-        // 1. 참여 여부 확인
-        const [check] = await db.query(
-            `SELECT * FROM dm_participants WHERE conversation_id = ? AND user_id = ?`,
-            [conversationId, myId]
-        );
+  try {
+    // 1. 참여 여부 확인
+    const [check] = await db.query(
+      `SELECT * FROM dm_participants WHERE conversation_id = ? AND user_id = ?`,
+      [conversationId, myId]
+    );
 
-        if (check.length === 0) {
-            return res.status(403).json({ success: false, message: '이 대화방에 참여하지 않았습니다.' });
-        }
-
-        // 2. 참여자 목록에서 제거
-        await db.query(
-            `DELETE FROM dm_participants WHERE conversation_id = ? AND user_id = ?`,
-            [conversationId, myId]
-        );
-
-        res.json({ success: true, message: '대화방에서 나갔습니다.' });
-    } catch (err) {
-        console.error('대화방 나가기 실패:', err);
-        res.status(500).send('Server Error');
+    if (check.length === 0) {
+      return res.status(403).json({ success: false, message: '이 대화방에 참여하지 않았습니다.' });
     }
+
+    // 2. 참여자 목록에서 제거
+    await db.query(
+      `DELETE FROM dm_participants WHERE conversation_id = ? AND user_id = ?`,
+      [conversationId, myId]
+    );
+
+    res.json({ success: true, message: '대화방에서 나갔습니다.' });
+  } catch (err) {
+    console.error('대화방 나가기 실패:', err);
+    res.status(500).send('Server Error');
+  }
 });
+// routes/dm.js
+router.get('/search', async (req, res) => {
+  const keyword = req.query.keyword;
+  if (!keyword || keyword.trim() === '') {
+    return res.json({ success: true, users: [] });
+  }
+
+  try {
+    const [rows] = await db.query(`
+      SELECT user_id, username, full_name AS name, profile_image
+      FROM users
+      WHERE username LIKE ? OR full_name LIKE ?
+      LIMIT 20
+    `, [`%${keyword}%`, `%${keyword}%`]);
+
+    res.json({ success: true, users: rows });
+  } catch (err) {
+    console.error('유저 검색 실패:', err);
+    res.status(500).json({ success: false, message: '서버 오류' });
+  }
+});
+// routes/dm.js
+router.post('/create-room', async (req, res) => {
+  const { userIds, creatorId } = req.body;
+
+  if (!Array.isArray(userIds) || userIds.length === 0 || !creatorId) {
+    return res.status(400).json({ success: false, message: '필수 정보 누락' });
+  }
+
+  const participantIds = [...new Set([...userIds, creatorId])];
+
+  const conn = await db.getConnection();
+  await conn.beginTransaction();
+
+  try {
+    // 1. 채팅방 생성 (is_group = 1)
+    const [roomResult] = await conn.query(`
+      INSERT INTO chat_rooms (is_group, room_name, created_at)
+      VALUES (?, NULL, NOW())
+    `, [1]);
+
+    const roomId = roomResult.insertId;
+
+    // 2. 참여자들 chat_room_members에 추가
+    const values = participantIds.map(uid => [roomId, uid]);
+    await conn.query(`
+      INSERT INTO chat_room_members (room_id, user_id)
+      VALUES ?
+    `, [values]);
+
+    // 3. 참여자 정보 불러오기
+    const [participants] = await conn.query(`
+      SELECT user_id, username, profile_image
+      FROM users
+      WHERE user_id IN (?)
+    `, [participantIds]);
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      room: {
+        room_id: roomId,
+        is_group: 1,
+        room_name: null,
+        participants
+      }
+    });
+  } catch (err) {
+    await conn.rollback();
+    console.error('채팅방 생성 실패:', err);
+    res.status(500).json({ success: false, message: '서버 오류' });
+  } finally {
+    conn.release();
+  }
+});
+
 module.exports = router;

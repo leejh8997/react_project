@@ -7,8 +7,8 @@ const { getIO, getConnectedUsers } = require('../socket');
 const bcrypt = require('bcrypt');
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 
 const upload = multer({ storage });
@@ -20,11 +20,11 @@ const router = express.Router();
  * @access  Public
  */
 router.get('/:username', authMiddleware, async (req, res) => {
-    const { username } = req.params;
-    const myId = req.user?.userId; // 로그인 유저
+  const { username } = req.params;
+  const myId = req.user?.userId; // 로그인 유저
 
-    try {
-        const [[user]] = await db.query(`
+  try {
+    const [[user]] = await db.query(`
         SELECT 
           user_id,
           username,
@@ -39,30 +39,30 @@ router.get('/:username', authMiddleware, async (req, res) => {
         WHERE username = ?
       `, [username]);
 
-        if (!user) return res.status(404).json({ success: false, message: '유저 없음' });
+    if (!user) return res.status(404).json({ success: false, message: '유저 없음' });
 
-        // 나 자신이 아닌 경우에만 isFollowing 여부 확인
-        let isFollowing = false;
-        console.log("--------------------", myId && user.user_id !== myId);
-        if (myId && user.user_id !== myId) {
-            const [followRows] = await db.query(
-                `SELECT 1 FROM follows WHERE follower_id = ? AND followee_id = ? LIMIT 1`,
-                [myId, user.user_id]
-            );
-            isFollowing = followRows.length > 0;
-        }
-
-        res.json({
-            success: true,
-            user: {
-                ...user,
-                isFollowing
-            }
-        });
-    } catch (err) {
-        console.error('유저 정보 조회 실패:', err);
-        res.status(500).send('Server Error');
+    // 나 자신이 아닌 경우에만 isFollowing 여부 확인
+    let isFollowing = false;
+    console.log("--------------------", myId && user.user_id !== myId);
+    if (myId && user.user_id !== myId) {
+      const [followRows] = await db.query(
+        `SELECT 1 FROM follows WHERE follower_id = ? AND followee_id = ? LIMIT 1`,
+        [myId, user.user_id]
+      );
+      isFollowing = followRows.length > 0;
     }
+
+    res.json({
+      success: true,
+      user: {
+        ...user,
+        isFollowing
+      }
+    });
+  } catch (err) {
+    console.error('유저 정보 조회 실패:', err);
+    res.status(500).send('Server Error');
+  }
 });
 // /**
 //  * @route   GET /users/:username/posts
@@ -137,6 +137,70 @@ router.put('/me', authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: '서버 오류' });
   }
 });
+router.put('/profile', authMiddleware, upload.single('profile_image'), async (req, res) => {
+  const { userId } = req.user;
+  const { username, bio } = req.body;
+  const file = req.file;
+
+  try {
+    // 1. 프로필 이미지 URL 구성
+    let profileImage = null;
+    if (file) {
+      const baseUrl = req.protocol + '://' + req.get('host');
+      profileImage = baseUrl + '/uploads/' + file.filename;
+    }
+
+    // 2. username 중복 검사
+    if (username) {
+      const [[exists]] = await db.query(
+        `SELECT COUNT(*) AS cnt FROM users WHERE username = ? AND user_id != ?`,
+        [username, userId]
+      );
+      if (exists.cnt > 0) {
+        return res.status(400).json({ success: false, message: '이미 사용 중인 사용자 이름입니다.' });
+      }
+    }
+
+    // 3. 동적 UPDATE SQL 구성
+    const updateFields = [];
+    const params = [];
+
+    if (username) {
+      updateFields.push('username = ?');
+      params.push(username);
+    }
+    if (bio !== undefined) {
+      updateFields.push('bio = ?');
+      params.push(bio);
+    }
+    if (profileImage) {
+      updateFields.push('profile_image = ?');
+      params.push(profileImage);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ success: false, message: '수정할 항목이 없습니다.' });
+    }
+    params.push(userId);
+    await db.query(
+      `UPDATE users SET ${updateFields.join(', ')} WHERE user_id = ?`,
+      params
+    );
+    // 4. 수정된 내용 응답
+    res.json({
+      success: true,
+      message: '프로필이 수정되었습니다.',
+      updated: {
+        username,
+        bio,
+        profile_image: profileImage
+      }
+    });
+  } catch (err) {
+    console.error('프로필 수정 실패:', err);
+    res.status(500).send('Server Error');
+  }
+});
 router.get('/check-username', async (req, res) => {
   const { username } = req.query;
   try {
@@ -169,18 +233,18 @@ router.put('/change-password', authMiddleware, async (req, res) => {
 });
 // 팔로워 목록
 router.get('/:username/followers', authMiddleware, async (req, res) => {
-    const { username } = req.params;
-    const loginUserId = req.user.userId;
+  const { username } = req.params;
+  const loginUserId = req.user.userId;
 
-    try {
-        const [[targetUser]] = await db.query(
-            `SELECT user_id FROM users WHERE username = ?`,
-            [username]
-        );
-        if (!targetUser) return res.json({ success: false, message: '유저 없음' });
+  try {
+    const [[targetUser]] = await db.query(
+      `SELECT user_id FROM users WHERE username = ?`,
+      [username]
+    );
+    if (!targetUser) return res.json({ success: false, message: '유저 없음' });
 
-        const [rows] = await db.query(
-            `SELECT u.user_id, u.username, u.full_name, u.profile_image,
+    const [rows] = await db.query(
+      `SELECT u.user_id, u.username, u.full_name, u.profile_image,
               EXISTS (
                 SELECT 1 FROM follows f2
                 WHERE f2.follower_id = ? AND f2.followee_id = u.user_id
@@ -188,28 +252,28 @@ router.get('/:username/followers', authMiddleware, async (req, res) => {
             FROM follows f
             JOIN users u ON f.follower_id = u.user_id
             WHERE f.followee_id = ?`,
-            [loginUserId, targetUser.user_id]
-        );
+      [loginUserId, targetUser.user_id]
+    );
 
-        res.json({ success: true, users: rows });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false });
-    }
+    res.json({ success: true, users: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
 });
 // 팔로잉 목록
 router.get('/:username/followings', authMiddleware, async (req, res) => {
-    const { username } = req.params;
-    const loginUserId = req.user.userId;
+  const { username } = req.params;
+  const loginUserId = req.user.userId;
 
-    const [[targetUser]] = await db.query(
-        `SELECT user_id FROM users WHERE username = ?`,
-        [username]
-    );
-    if (!targetUser) return res.json({ success: false, message: '유저 없음' });
+  const [[targetUser]] = await db.query(
+    `SELECT user_id FROM users WHERE username = ?`,
+    [username]
+  );
+  if (!targetUser) return res.json({ success: false, message: '유저 없음' });
 
-    const [rows] = await db.query(
-        `SELECT u.user_id, u.username, u.full_name, u.profile_image,
+  const [rows] = await db.query(
+    `SELECT u.user_id, u.username, u.full_name, u.profile_image,
             EXISTS (
               SELECT 1 FROM follows f2
               WHERE f2.follower_id = ? AND f2.followee_id = u.user_id
@@ -217,57 +281,57 @@ router.get('/:username/followings', authMiddleware, async (req, res) => {
      FROM follows f
      JOIN users u ON f.followee_id = u.user_id
      WHERE f.follower_id = ?`,
-        [loginUserId, targetUser.user_id]
-    );
+    [loginUserId, targetUser.user_id]
+  );
 
-    res.json({ success: true, users: rows });
+  res.json({ success: true, users: rows });
 });
 // 언팔로우
 router.delete('/unfollow', authMiddleware, async (req, res) => {
-    const followerId = req.user.userId;
-    const { targetUserId } = req.body;
-    console.log("팔로워아이디", followerId);
-    try {
-        // 1. 팔로우 관계 삭제
-        const [result] = await db.query(
-            `DELETE FROM follows WHERE follower_id = ? AND followee_id = ?`,
-            [followerId, targetUserId]
-        );
+  const followerId = req.user.userId;
+  const { targetUserId } = req.body;
+  console.log("팔로워아이디", followerId);
+  try {
+    // 1. 팔로우 관계 삭제
+    const [result] = await db.query(
+      `DELETE FROM follows WHERE follower_id = ? AND followee_id = ?`,
+      [followerId, targetUserId]
+    );
 
-        // 2. 팔로우 알림 삭제
-        await db.query(`
+    // 2. 팔로우 알림 삭제
+    await db.query(`
             DELETE FROM notifications 
             WHERE type IN ('follow', 'follow-request')
             AND target_user_id = ?
             AND from_user_id = ?
         `, [targetUserId, followerId]);
 
-        // 🔽 소켓으로 상대방에게 알림 수 감소 신호 전송
-        const io = getIO();
-        const connectedUsers = getConnectedUsers();
-        const targetSocketId = connectedUsers.get(targetUserId);
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('decreaseNotificationCount');
-        }
-
-        if (result.affectedRows > 0) {
-            res.json({ success: true, message: '언팔로우 성공' });
-        } else {
-            res.json({ success: false, message: '언팔로우 대상 없음' });
-        }
-
-
-    } catch (err) {
-        console.error('🔥 언팔로우 에러:', err);
-        res.status(500).json({ success: false });
+    // 🔽 소켓으로 상대방에게 알림 수 감소 신호 전송
+    const io = getIO();
+    const connectedUsers = getConnectedUsers();
+    const targetSocketId = connectedUsers.get(targetUserId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('decreaseNotificationCount');
     }
+
+    if (result.affectedRows > 0) {
+      res.json({ success: true, message: '언팔로우 성공' });
+    } else {
+      res.json({ success: false, message: '언팔로우 대상 없음' });
+    }
+
+
+  } catch (err) {
+    console.error('🔥 언팔로우 에러:', err);
+    res.status(500).json({ success: false });
+  }
 });
 // 프로필에서 저장된 게시물 불러올 때 사용
 router.get('/:userId/bookmarks', async (req, res) => {
-    const { userId } = req.params;
+  const { userId } = req.params;
 
-    try {
-        const [posts] = await db.query(`
+  try {
+    const [posts] = await db.query(`
             SELECT 
                 p.post_id,
                 (SELECT file_url FROM post_media pi WHERE pi.post_id = p.post_id LIMIT 1) AS file_url,
@@ -296,11 +360,12 @@ router.get('/:userId/bookmarks', async (req, res) => {
             ORDER BY p.created_at DESC
             `, [userId, userId, userId]);
 
-        res.json({ success: true, posts: posts });
-    } catch (err) {
-        console.error('북마크 불러오기 실패:', err);
-        res.status(500).json({ success: false });
-    }
+    res.json({ success: true, posts: posts });
+  } catch (err) {
+    console.error('북마크 불러오기 실패:', err);
+    res.status(500).json({ success: false });
+  }
 });
+
 
 module.exports = router;

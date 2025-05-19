@@ -1,5 +1,5 @@
 // Menu.js - 인스타그램 스타일 좌측 사이드바 메뉴
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Box,
   List,
@@ -20,7 +20,7 @@ import AddBoxOutlinedIcon from '@mui/icons-material/AddBoxOutlined';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Logo from '../assets/white.png';
+import Logo from '../assets/ReactGram_logo.png';
 import PostUpload from './PostUpload';
 import { jwtDecode } from 'jwt-decode';
 import { authFetch } from '../utils/authFetch';
@@ -43,6 +43,27 @@ function Menu({ onSearchClick, onNotifClick, unreadCount }) {
   const [uploadModal, setUploadModal] = useState(false);
   const token = localStorage.getItem('token');
   const user = token ? jwtDecode(token) : {};
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreRef = useRef();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (moreRef.current && !moreRef.current.contains(e.target)) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  };
+
+  const handleSwitchAccount = () => {
+    alert('계정 전환 기능은 아직 구현되지 않았습니다.');
+  };
 
   const handleClick = (item) => {
     if (item.label === '만들기') {
@@ -120,12 +141,41 @@ function Menu({ onSearchClick, onNotifClick, unreadCount }) {
       </Box>
 
       {/* 하단 더보기 */}
-      <Box sx={{ width: '59px', mb: 1, backgroundColor: '#fff', }}>
+      <Box sx={{ width: '59px', mb: 1, position: 'relative' }} ref={moreRef}>
         <Tooltip title="더 보기" placement="right" arrow>
-          <ListItemButton onClick={() => alert('설정/로그아웃/전환 메뉴 (임시 동작)')} sx={{ justifyContent: 'center' }}>
+          <ListItemButton onClick={() => setShowMoreMenu((prev) => !prev)} sx={{ justifyContent: 'center' }}>
             <ListItemIcon sx={{ minWidth: 0 }}><MenuIcon /></ListItemIcon>
           </ListItemButton>
         </Tooltip>
+
+        {showMoreMenu && (
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: '60px',
+              left: '60px',
+              width: '180px',
+              bgcolor: '#fff',
+              boxShadow: 3,
+              borderRadius: 2,
+              overflow: 'hidden',
+              zIndex: 10000
+            }}
+          >
+            <Box
+              sx={{ px: 2, py: 1.5, cursor: 'pointer', '&:hover': { bgcolor: '#f5f5f5' } }}
+              onClick={handleSwitchAccount}
+            >
+              계정 전환
+            </Box>
+            <Box
+              sx={{ px: 2, py: 1.5, cursor: 'pointer', '&:hover': { bgcolor: '#f5f5f5' } }}
+              onClick={handleLogout}
+            >
+              로그아웃
+            </Box>
+          </Box>
+        )}
       </Box>
     </Box>
   );

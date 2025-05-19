@@ -76,7 +76,7 @@ function Join() {
           }}
         >
           <Typography variant="h4" fontWeight={700} mb={1}>
-            Instagram
+            ReactGram
           </Typography>
 
           <Typography variant="body2" color="textSecondary" mb={2}>

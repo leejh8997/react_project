@@ -19,6 +19,10 @@ function Messages() {
   const [messages, setMessages] = useState([]);
   const [readByList, setReadByList] = useState([]);
   const [roomList, setRoomList] = useState([]);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const searchTimeout = useRef(null);
 
   useEffect(() => {
     if (!user.userId) return;
@@ -32,6 +36,23 @@ function Messages() {
         }
       });
   }, [user.userId]);
+
+  useEffect(() => {
+    if (!searchKeyword.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    searchTimeout.current = setTimeout(() => {
+      authFetch(`http://localhost:3005/dm/search?keyword=${searchKeyword}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setSearchResults(data.users);
+        });
+    }, 1000);
+  }, [searchKeyword]);
 
   useEffect(() => {
     if (!selectedRoom) return;
@@ -88,6 +109,34 @@ function Messages() {
       socket.off('messageRead');
     };
   }, [selectedRoom]);
+
+  const handleSelectUser = (user) => {
+    if (!selectedUsers.find(u => u.user_id === user.user_id)) {
+      setSelectedUsers(prev => [...prev, user]);
+    }
+  };
+
+  const handleCreateRoom = async () => {
+    if (selectedUsers.length === 0) return;
+
+    const res = await fetch('http://localhost:3005/dm/create-room', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userIds: selectedUsers.map(u => u.user_id),
+        creatorId: user.userId
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setRoomList(prev => [data.room, ...prev]);
+      setShowNewChatModal(false);
+      setSelectedUsers([]);
+      setSearchKeyword('');
+      setSearchResults([]);
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() && files.length === 0) return;
@@ -401,13 +450,44 @@ function Messages() {
               <Typography fontWeight="bold">새로운 메시지</Typography>
               <IconButton onClick={() => setShowNewChatModal(false)}><Close /></IconButton>
             </Box>
-            <InputBase fullWidth placeholder="받는 사람: 검색..." sx={{ border: '1px solid #ccc', borderRadius: 1, px: 1, py: 0.5, mb: 2 }} />
-            <Typography variant="body2" color="text.secondary" mb={1}>추천</Typography>
-            <Box display="flex" alignItems="center">
-              <Avatar src="/images/dog.jpg" sx={{ width: 40, height: 40, mr: 1 }} />
-              <Typography>재원</Typography>
+            <InputBase
+              fullWidth
+              placeholder="받는 사람: 검색..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              sx={{ border: '1px solid #ccc', borderRadius: 1, px: 1, py: 0.5, mb: 2 }}
+            />
+
+            {/* 선택된 유저 목록 */}
+            <Box display="flex" flexWrap="wrap" mb={1}>
+              {selectedUsers.map(user => (
+                <Box key={user.user_id} mr={1} mb={1} display="flex" alignItems="center">
+                  <Avatar src={user.profile_image} sx={{ width: 24, height: 24, mr: 0.5 }} />
+                  <Typography variant="body2">{user.username}</Typography>
+                  <IconButton size="small" onClick={() =>
+                    setSelectedUsers(selectedUsers.filter(u => u.user_id !== user.user_id))
+                  }>
+                    <Close fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
             </Box>
-            <Button fullWidth variant="contained" sx={{ mt: 2 }}>채팅</Button>
+
+            {/* 검색 결과 */}
+            {searchResults.map(user => (
+              <Box key={user.user_id} display="flex" alignItems="center" sx={{ cursor: 'pointer', mb: 1 }}
+                onClick={() => handleSelectUser(user)}>
+                <Avatar src={user.profile_image} sx={{ width: 40, height: 40, mr: 1 }} />
+                <Box>
+                  <Typography fontWeight="bold">{user.username}</Typography>
+                  <Typography variant="caption" color="text.secondary">{user.name}</Typography>
+                </Box>
+              </Box>
+            ))}
+
+            <Button fullWidth variant="contained" sx={{ mt: 2 }} onClick={handleCreateRoom}>
+              채팅
+            </Button>
           </Box>
         </Box>
       )}

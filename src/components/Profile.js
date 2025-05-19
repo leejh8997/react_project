@@ -159,18 +159,24 @@ function Profile() {
   const handleTabChange = (_, newValue) => setTab(newValue);
 
   const handleProfileClick = () => {
-    setBgBlur(true);
+    // setBgBlur(true);
     fileInputRef.current.click();
+    // 파일 선택 여부를 감지하기 위해 일정 시간 후에도 file이 없으면 blur 해제
+    // setTimeout(() => {
+    //   if (!fileInputRef.current?.files?.length) {
+    //     setBgBlur(false);
+    //   }
+    // }, 1000); // 1초 후 검사
   };
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (!file) return setBgBlur(false);
+    // if (!file) return setBgBlur(false);
 
     const formData = new FormData();
     formData.append('profile_image', file);
 
-    const res = await authFetch('http://localhost:3005/users/me', {
+    const res = await authFetch('http://localhost:3005/users/profile', {
       method: 'PUT',
       body: formData
     });
@@ -180,7 +186,7 @@ function Profile() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImage(reader.result);
-        setBgBlur(false);
+        // setBgBlur(false);
       };
       reader.readAsDataURL(file);
     }
@@ -291,7 +297,7 @@ function Profile() {
         <Tab label="태그됨" />
       </Tabs>
       <ImageList cols={3} rowHeight={250} sx={{ mt: 2 }}>
-       {(tab === 0 || tab === 1 ? posts : []).map(post => (
+        {(tab === 0 || tab === 1 ? posts : []).map(post => (
           <ImageListItem
             key={post.post_id}
             onClick={() => {
