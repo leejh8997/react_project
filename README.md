@@ -50,7 +50,8 @@
 ---
 
 ## 📄 페이지별 기능
-![image](https://github.com/user-attachments/assets/af1b8af0-e102-4e3e-8480-f4b00924cac5)
+![Uploading image.png…]()
+
 
 ### 🔐 로그인 페이지 (login)
 - 기본 정보를 통한 회원 가입
