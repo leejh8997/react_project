@@ -29,7 +29,7 @@ const menuItems = [
   { label: '홈', icon: <HomeIcon />, path: '/home' },
   { label: '검색', icon: <SearchIcon />, action: 'search', path: '/search' },
   { label: '탐색 탭', icon: <ExploreIcon />, path: '/explore' },
-  { label: '릴스', icon: <MovieIcon />, path: '/reels' },
+  // { label: '릴스', icon: <MovieIcon />, path: '/reels' },
   { label: '메시지', icon: <ChatBubbleOutlineIcon />, path: '/messages' },
   { label: '알림', icon: <FavoriteBorderIcon />, path: '/notifications' },
   { label: '만들기', icon: <AddBoxOutlinedIcon />, path: '/upload' },
