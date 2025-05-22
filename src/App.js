@@ -123,7 +123,18 @@ function App() {
       }}>
         <Box sx={{
           width: '100%',
-          ...(location.pathname !== '/messages' && { maxWidth: 600, px: 2 }) // 메시지 페이지가 아닐 경우만 px, maxWidth 적용
+          minHeight: '100vh',
+          // 로그인/회원가입은 전체화면
+          ...(isAuthPage
+            ? {
+              maxWidth: '100%',
+              backgroundImage: 'url("/images/login-bg.jpg")', // ✅ 원하는 배경 이미지 경로
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+            : location.pathname !== '/messages'
+              ? { maxWidth: 600, px: 2 }
+              : {})
         }}>
           <Routes>
             <Route path="/" element={<Login />} />
