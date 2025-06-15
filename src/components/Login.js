@@ -48,7 +48,8 @@ function Login() {
     setMessage(null);
 
     setTimeout(() => {
-      fetch("http://localhost:3005/auth/login", {
+      // fetch("http://52.78.171.225:3005/auth/login", {
+        fetch("http://localhost:3005/auth/login", {
         method: "POST",
         headers: {
           "Content-type": "application/json"
