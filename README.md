@@ -131,32 +131,26 @@
 - 인스타그램 UI를 모방하며 **MUI와 react-slick 커스터마이징** 경험을 쌓을 수 있었습니다.
 - 북마크, 멘션, DM 등 고급 기능을 구현하며 **풀스택 구현 역량**을 향상시켰습니다.
 
-  ## 트러블 슈팅
-  5. 개인 프로젝트 – SNS 웹앱 (트러블 슈팅)
+🛠 트러블 슈팅 – 상태 동기화 문제
 ❗ 문제 상황
-게시물 상세 모달(PostModal)에서 좋아요/북마크/댓글 등록은 정상 작동하나,
+상세 모달(PostModal) 내 좋아요/북마크/댓글은 정상 작동하지만,
 홈/탐색 페이지 등 외부 컴포넌트에 즉시 반영되지 않음
 
-좋아요 토글 후 모달을 닫으면, 이전 리스트에서는 변경이 반영되지 않아 사용자 혼란 발생
+모달 닫은 뒤 리스트에서 상태가 반영되지 않아 사용자 혼란 발생
 
 🔍 원인 분석
 상태 동기화 구조 부재
 
-PostModal이 개별적으로 로컬 상태를 관리하며 외부 컴포넌트와 연결이 없음
+PostModal이 로컬 상태만 관리 → 외부 컴포넌트와 연결되지 않음
 
-콜백 또는 상태 공유 미흡
-
-부모 컴포넌트에서 전달받은 post 리스트가 변경사항을 반영할 방법이 없음
-
-Context/전역상태 관리 미사용으로 인한 데이터 불일치
+콜백 전달 부족, Context 미사용 → 상태 불일치 발생
 
 🔧 해결 방법
-onLikeToggle, onBookmarkToggle, onCommentAdd 등 콜백 props를 통해
-상태 변경을 부모 컴포넌트로 전달
+onLikeToggle, onBookmarkToggle, onCommentAdd 콜백 props 전달
 
-각 컴포넌트에서 setPosts(posts => updatedPosts) 구조로 반영되도록 처리
+부모 컴포넌트에서 setPosts() 구조로 리스트 갱신
 
-이후에도 재사용 가능하도록 공통 updatePostById 함수 추출
+재사용 가능하도록 updatePostById() 공통 함수 추출
 
 jsx
 복사
@@ -169,11 +163,17 @@ const handleLikeToggle = () => {
 
 // Home.jsx or Explore.jsx
 const updatePostLike = (postId, isLiked) => {
-  setPosts(prev => prev.map(p => p.postId === postId ? { ...p, isLiked, likeCount: isLiked ? p.likeCount + 1 : p.likeCount - 1 } : p));
+  setPosts(prev =>
+    prev.map(p =>
+      p.postId === postId
+        ? { ...p, isLiked, likeCount: isLiked ? p.likeCount + 1 : p.likeCount - 1 }
+        : p
+    )
+  );
 };
 ✅ 결과
-모든 컴포넌트에서 동일한 게시물 상태 유지
+모든 컴포넌트 간 동일한 게시물 상태 유지
 
-좋아요/북마크/댓글 UI 상태 불일치 문제 해소
+좋아요/북마크/댓글 등 UI 불일치 문제 해결
 
-PostModal 재사용 시에도 일관된 UX 제공 가능
+PostModal 재사용성 증가, 일관된 UX 제공 가능
